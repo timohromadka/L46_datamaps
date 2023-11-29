@@ -1,0 +1,56 @@
+program: /home/am2770/Github/cancer-low-data/src/run_experiment.py # Path to the program to run
+project: low-data            # Project name
+
+name: ablation_remove_wpn
+
+command:
+- ${env}
+- ${interpreter}
+- ${program}
+- --model
+- dnn                         # CHECK
+- --sparsity_type
+- global
+- --tags
+- 2f5e46f9                    # RUN python ./generate_uuid.py in the terminal to generate a new tag for each experiment
+- --use_best_hyperparams      # Check in src/run_experiment.py
+- ${args}
+
+method: grid
+parameters:
+  dataset:
+    distribution: categorical
+    values:
+    - cll
+    - smk
+    - toxicity
+    - lung
+    - metabric-dr__200
+    - metabric-pam50__200
+    - tcga-2ysurvival__200
+    - tcga-tumor-grade__200
+    - prostate
+
+  sparsity_regularizer_hyperparam:
+    distribution: categorical
+    values:
+    - 0
+    - 0.00003
+
+  repeat_id:  # number of folds
+    distribution: categorical
+    values:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+
+  test_split: # defines different splits
+    distribution: categorical
+    values: 
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4

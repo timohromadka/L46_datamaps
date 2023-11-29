@@ -1,0 +1,9 @@
+[submodule "src/modules/bayesian_hierarchical_clustering"]
+	path = src/modules/bayesian_hierarchical_clustering
+	url = https://github.com/caponetto/bayesian-hierarchical-clustering.git
+[submodule "src/modules/bayesian_hierarchical_clustering_examples"]
+	path = src/modules/bayesian_hierarchical_clustering_examples
+	url = https://github.com/caponetto/bayesian-hierarchical-clustering-examples.git
+[submodule "src/modules/scikit_learn_extra"]
+	path = src/modules/scikit_learn_extra
+	url = https://github.com/scikit-learn-contrib/scikit-learn-extra.git
