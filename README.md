@@ -1,4 +1,4 @@
-# WPFS - Weight Predictor Network with Feature Selection
+# L46 Datamaps
 
 ## Installing the project 
 You must have **conda** installed locally. All project dependencies all included in the conda file: environment.yml.
@@ -8,8 +8,8 @@ This was tested to work on: CUDA Version: 11.2 (NVIDIA-SMI 460.32.03).
 ```
 <!-- Install the codebase -->
 cd REPOSITORY
-conda create python=3.7.9 --name low-data
-conda activate low-data
+conda create python=3.10.12 --name L46
+conda activate L46
 pip install -r requirements.txt
 
 <!-- Optionally, install lightgbm -->
@@ -27,7 +27,7 @@ pip freeze > requirements.txt
 
 ## Codebase basics
 - Store training metrics using **wandb**. It makes running experiments much easier.
-- Train using **pytorch-lightening**, which is a wrapper on top of pytorch. It has three main benefits: (1) it make training logic much simpler, (2) it allows us to use the same code for training on CPU or GPU, and (3) integrates nicely with wandb.
+- Train using **pytorch-lightning**, which is a wrapper on top of pytorch. It has three main benefits: (1) it make training logic much simpler, (2) it allows us to use the same code for training on CPU or GPU, and (3) integrates nicely with wandb.
 
 ## Code structure
 - src
