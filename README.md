@@ -20,6 +20,11 @@ Change `BASE_DIR` from `/src/_config.py` to point to the project directory on yo
 
 Search `am2770`in the codebase and replace the paths with the paths on your machine.
 
+Test your install by running:
+```
+./run_exp_test.sh
+```
+
 When you install new modules, save the environment:
 ```
 pip freeze > requirements.txt
