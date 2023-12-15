@@ -1,7 +1,7 @@
 # L46 Datamaps
 
 ## Installing the project 
-You must have **conda** installed locally. All project dependencies all included in the conda file: environment.yml.
+You must have **conda** installed locally. All project dependencies are included in the conda file: environment.yml.
 
 This was tested to work on: CUDA Version: 11.2 (NVIDIA-SMI 460.32.03).
 
@@ -10,6 +10,11 @@ This was tested to work on: CUDA Version: 11.2 (NVIDIA-SMI 460.32.03).
 cd REPOSITORY
 conda create python=3.10.12 --name L46
 conda activate L46
+
+<!-- Install PyTorch if not already on the system -->
+conda install pytorch -c pytorch
+
+<!-- Install requirements -->
 pip install -r requirements.txt
 
 <!-- Optionally, install lightgbm -->
