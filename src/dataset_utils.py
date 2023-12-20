@@ -10,7 +10,6 @@ def create_data_module(args):
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    # Load the dataset
     if args.dataset == 'cifar10':
         train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
@@ -43,9 +42,24 @@ def create_data_module(args):
     train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    train_unshuffled_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False) # required for datamap_callback later on
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
+    train_unshuffled_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=False) # required for datamap_callback later on
+    val_loader = DataLoader(val_dataset, batch_size=args.validation_batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=args.validation_batch_size, shuffle=False)
 
     return train_loader, train_unshuffled_loader, val_loader, test_loader
+
+def preprocess_cifar10(dataset):
+    return dataset
+
+def preprocess_cifar100(dataset):
+    return dataset
+
+def preprocess_mnist(dataset):
+    return dataset
+
+def preprocess_speechcommands(dataset):
+    return dataset
+
+def preprocess_urbansounds8k(dataset):
+    return dataset

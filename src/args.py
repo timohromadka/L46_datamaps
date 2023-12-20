@@ -39,6 +39,8 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--learning_rate', type=float, default=0.001)
 parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam', 'AdamW', 'SGD'])
+parser.add_argument('--train_batch_size', type=int, default=32)
+parser.add_argument('--validation_batch_size', type=int, default=128)
 
 # PyTorch Lightning Specific
 parser.add_argument('--precision', type=int, default=32, choices=[16, 32])
