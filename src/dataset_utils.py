@@ -3,6 +3,14 @@ from torchvision import datasets, transforms
 from torchaudio.datasets import SPEECHCOMMANDS, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 
+NUM_CLASSES = {
+    'cifar10': 10,
+    'cifar100': 100,
+    'mnist': 10,
+    'speechcommands': 10,
+    'urbansound8k': 10
+}
+
 def create_data_module(args):
     # Define transformations for image datasets
     transform = transforms.Compose([

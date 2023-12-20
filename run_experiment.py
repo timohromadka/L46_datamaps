@@ -7,10 +7,11 @@ import pytorch_lightning as pl
 
 from args import get_args
 from models import get_model
-from dataset_utils import get_dataset
+from dataset_utils import create_data_module
 from callbacks.training_dynamics import DataMapLightningCallback
 from utils.trainer_utils import train_model
 from wandb_utils import create_wandb_logger
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +33,8 @@ def main():
     # ================================
     wandb.init(project=project_name, config=args)
     if args.disable_wandb:
-		os.environ['WANDB_MODE'] = 'disabled'
+        os.environ['WANDB_MODE'] = 'disabled'
+  
     wandb_logger = create_wandb_logger(args, project_name)
     # wandb.run.name = f"{get_run_name(args)}_{args.suffix_wand_run_name}_{wandb.run.id}"
     wandb.run_name = args.run_name
@@ -45,11 +47,11 @@ def main():
     # ================================
     # FETCH DATASET
     # ================================
-    data_module = create_data_module(args)
+    train_loader, train_unshuffled_loader, val_loader, test_loader = create_data_module(args)
     #dataset = get_dataset(args) # unshuffled dataset
     
     # ================================
-    # FETCH MODEL
+    # UNDERGO TRAINING
     # ================================
     trainer, checkpoint_callback, datamap_callback = train_model(args, model, data_module, wandb_logger)
     
