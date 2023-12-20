@@ -1,3 +1,4 @@
+import numpy as np
 import collections
 from dataclasses import dataclass
 from pickletools import optimize
@@ -27,36 +28,117 @@ from dataset import *
 from models import *
 from _config import DATA_DIR
 
-def get_run_name(args):
-	if args.model=='dnn':
-		run_name = 'mlp'
-	elif args.model=='dietdnn':
-		run_name = 'mlp_wpn'
-	else:
-		run_name = args.model
 
-	if args.sparsity_type=='global':
-		run_name += '_SPN_global'
-	elif args.sparsity_type=='local':
-		run_name += '_SPN_local'
 
-	return run_name
+def main():
+    
+	warnings.filterwarnings("ignore", category=sklearn.exceptions.UndefinedMetricWarning)
+	warnings.filterwarnings("ignore", category=pytorch_lightning.utilities.warnings.LightningDeprecationWarning)
 
-def create_wandb_logger(args):
-	wandb_logger = WandbLogger(
-		project=WANDB_PROJECT,
-		group=args.group,
-		job_type=args.job_type,
-		tags=args.tags,
-		notes=args.notes,
-		# reinit=True,
+	print("Starting...")
 
-		log_model=args.wandb_log_model,
-		settings=wandb.Settings(start_method="thread")
+	logging.basicConfig(
+		filename='/home/am2770/Github/cancer-low-data/logs_exceptions.txt',
+		filemode='a',
+		format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+		datefmt='%H:%M:%S',
+		level=logging.DEBUG
 	)
-	wandb_logger.experiment.config.update(args)	  # add configuration file
 
-	return wandb_logger
+ 	args = parser.parse_args()
+
+
+
+	#### Assert sparsity parameters
+	if args.sparsity_type:
+		# if one of the sparsity parameters is set, then all of them must be set
+		assert args.sparsity_gene_embedding_type
+		assert args.sparsity_type
+		assert args.sparsity_method
+		assert args.sparsity_regularizer
+		# assert args.sparsity_regularizer_hyperparam
+
+	# add best performing configuration
+	if args.use_best_hyperparams:
+		# if the model uses gene embeddings of any type, then use dataset specific embedding sizes.
+		if args.model in ['fsnet', 'dietdnn']:
+			if args.dataset=='cll':
+				args.wpn_embedding_size = 70
+			elif args.dataset=='lung':
+				args.wpn_embedding_size = 20
+			else:
+				args.wpn_embedding_size = 50
+
+		if args.sparsity_type in ['global', 'local']:
+			if args.dataset=='cll':
+				args.sparsity_gene_embedding_size = 70
+			elif args.dataset=='lung':
+				args.sparsity_gene_embedding_size = 20
+			else:
+				args.sparsity_gene_embedding_size = 50
+
+		elif args.model=='rf':
+			params = {
+				'cll': (3, 3),
+				'lung': (3, 2),
+				'metabric-dr': (7, 2),
+				'metabric-pam50': (7, 2),
+				'prostate': (5, 2),
+				'smk': (5, 2),
+				'tcga-2ysurvival': (3, 3),
+				'tcga-tumor-grade': (3, 3),
+				'toxicity': (5, 3)
+			}
+
+			args.rf_max_depth, args.rf_min_samples_leaf = params[args.dataset]
+
+		elif args.model=='lasso':
+			params = {
+				'cll': 10,
+				'lung': 100,
+				'metabric-dr': 100,
+				'metabric-pam50': 10,
+				'prostate': 100,
+				'smk': 1000,
+				'tcga-2ysurvival': 10,
+				'tcga-tumor-grade': 100,
+				'toxicity': 100
+			}
+
+			args.lasso_C = params[args.dataset]
+		
+		elif args.model=='tabnet':
+			params = {
+				'cll': (0.03, 0.001),
+				'lung': (0.02, 0.1),
+				'metabric-dr': (0.03, 0.1),
+				'metabric-pam50': (0.02, 0.001),
+				'prostate': (0.02, 0.01),
+				'smk': (0.03, 0.001),
+				'tcga-2ysurvival': (0.02, 0.01),
+				'tcga-tumor-grade': (0.02, 0.01),
+				'toxicity': (0.03, 0.1)
+			}
+
+			args.lr, args.tabnet_lambda_sparse = params[args.dataset]
+
+		elif args.model=='lgb':
+			params = {
+				'cll': (0.1, 2),
+				'lung': (0.1, 1),
+				'metabric-dr': (0.1, 1),
+				'metabric-pam50': (0.01, 2),
+				'prostate': (0.1, 2),
+				'smk': (0.1, 2),
+				'tcga-2ysurvival': (0.1, 1),
+				'tcga-tumor-grade': (0.1, 1),
+				'toxicity': (0.1, 2)
+			}
+
+			args.lgb_learning_rate, args.lgb_max_depth = params[args.dataset]
+		
+
+	run_experiment(args)
 
 
 def run_experiment(args):
@@ -69,7 +151,6 @@ def run_experiment(args):
 	
 	print(f"Train/Valid/Test splits of sizes {args.train_size}, {args.valid_size}, {args.test_size}")
 	print(f"Num of features: {args.num_features}")
-
 
 	#### Intialize logging
 	wandb_logger = create_wandb_logger(args)
@@ -243,235 +324,6 @@ def run_experiment(args):
 
 	print("\nExiting from train function..")
 	
-def train_model(args, model, data_module, wandb_logger=None):
-	"""
-	Return 
-	- Pytorch Lightening Trainer
-	- checkpoint callback
-	"""
-
-	##### Train
-	if args.saved_checkpoint_name:
-		wandb_artifact_path = f'andreimargeloiu/low-data/{args.saved_checkpoint_name}'
-		print(f"\nDownloading artifact: {wandb_artifact_path}...")
-
-		artifact = wandb.use_artifact(wandb_artifact_path, type='model')
-		artifact_dir = artifact.download()
-		model_checkpoint = torch.load(os.path.join(artifact_dir, 'model.ckpt'))
-		weights = model_checkpoint['state_dict']
-		print("Artifact downloaded")
-
-		if args.load_model_weights:
-			print(f"\nLoading pretrained weights into model...")
-			missing_keys, unexpected_keys = model.load_state_dict(weights, strict=False)
-			print(f"Missing keys: \n")
-			print(missing_keys)
-
-			print(f"Unexpected keys: \n")
-			print(unexpected_keys)
-
-	mode_metric = 'max' if args.metric_model_selection=='balanced_accuracy' else 'min'
-	checkpoint_callback = ModelCheckpoint(
-		monitor=f'valid/{args.metric_model_selection}',
-		mode=mode_metric,
-		save_last=True,
-		verbose=True
-	)
-	callbacks = [checkpoint_callback, RichProgressBar()]
-
-	if args.patience_early_stopping and args.train_on_full_data==False:
-		callbacks.append(EarlyStopping(
-			monitor=f'valid/{args.metric_model_selection}',
-			mode=mode_metric,
-			patience=args.patience_early_stopping,
-		))
-	callbacks.append(LearningRateMonitor(logging_interval='step'))
-
-	pl.seed_everything(args.seed_training, workers=True)
-	trainer = pl.Trainer(
-		# Training
-		max_steps=args.max_steps,
-		gradient_clip_val=2.5,
-
-		# logging
-		logger=wandb_logger,
-		log_every_n_steps = 1,
-		val_check_interval = args.val_check_interval,
-		callbacks = callbacks,
-
-		# miscellaneous
-		accelerator="auto",
-		devices="auto",
-		detect_anomaly=True,
-		overfit_batches=args.overfit_batches,
-		deterministic=args.deterministic,
-	)
-	# train
-	trainer.fit(model, data_module)
-	
-	return trainer, checkpoint_callback
-
 
 if __name__ == "__main__":
-	warnings.filterwarnings("ignore", category=sklearn.exceptions.UndefinedMetricWarning)
-	warnings.filterwarnings("ignore", category=pytorch_lightning.utilities.warnings.LightningDeprecationWarning)
-
-	print("Starting...")
-
-	logging.basicConfig(
-		filename='/home/am2770/Github/cancer-low-data/logs_exceptions.txt',
-		filemode='a',
-		format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-		datefmt='%H:%M:%S',
-		level=logging.DEBUG
-	)
-
- 	args = parser.parse_args()
-
-	if args.train_on_full_data and args.model in ['dnn', 'dietdnn']:
-		assert args.path_steps_on_full_data
-
-		# retrieve the number of steps to train
-		aux = pd.read_csv(args.path_steps_on_full_data, index_col=0)
-		conditions = {
-			'dataset': args.dataset,
-			'model': args.model,
-			'sparsity_regularizer_hyperparam': args.sparsity_regularizer_hyperparam,
-		}
-		temp = aux.loc[(aux[list(conditions)] == pd.Series(conditions)).all(axis=1)].copy()
-		assert temp.shape[0] == 1
-
-		args.max_steps = int(temp['median'].values[0])
-
-
-	# set seeds
-	args.seed_kfold = args.repeat_id
-	args.seed_validation = args.test_split
-
-
-	if args.dataset == 'prostate' or args.dataset == 'cll':
-		# `val_check_interval`` must be less than or equal to the number of the training batches
-		args.val_check_interval = 4
-
-
-	"""
-	#### Parse dataset size
-	when args.dataset=="metabric-dr__200" split into
-	args.dataset = "metabric-dr"
-	args.dataset_size = 200
-	- 
-	"""
-	if "__" in args.dataset:
-		args.dataset, args.dataset_size = args.dataset.split("__")
-		args.dataset_size = int(args.dataset_size)
-
-
-	#### Assert that the dataset is supported
-	SUPPORTED_DATASETS = ['metabric-pam50', 'metabric-dr',
-						  'tcga-2ysurvival', 'tcga-tumor-grade',
-						  'lung', 'prostate', 'toxicity', 'cll', 'smk']
-	if args.dataset not in SUPPORTED_DATASETS:
-		raise Exception(f"Dataset {args.dataset} not supported. Supported datasets are {SUPPORTED_DATASETS}")
-
-	#### Assert custom evaluation with repeated dataset sampling
-	if args.evaluate_with_sampled_datasets or args.custom_train_size or args.custom_valid_size or args.custom_test_size:
-		assert args.evaluate_with_sampled_datasets
-		assert args.custom_train_size
-		assert args.custom_test_size
-		assert args.custom_valid_size
-
-
-	#### Assert sparsity parameters
-	if args.sparsity_type:
-		# if one of the sparsity parameters is set, then all of them must be set
-		assert args.sparsity_gene_embedding_type
-		assert args.sparsity_type
-		assert args.sparsity_method
-		assert args.sparsity_regularizer
-		# assert args.sparsity_regularizer_hyperparam
-
-	# add best performing configuration
-	if args.use_best_hyperparams:
-		# if the model uses gene embeddings of any type, then use dataset specific embedding sizes.
-		if args.model in ['fsnet', 'dietdnn']:
-			if args.dataset=='cll':
-				args.wpn_embedding_size = 70
-			elif args.dataset=='lung':
-				args.wpn_embedding_size = 20
-			else:
-				args.wpn_embedding_size = 50
-
-		if args.sparsity_type in ['global', 'local']:
-			if args.dataset=='cll':
-				args.sparsity_gene_embedding_size = 70
-			elif args.dataset=='lung':
-				args.sparsity_gene_embedding_size = 20
-			else:
-				args.sparsity_gene_embedding_size = 50
-
-		elif args.model=='rf':
-			params = {
-				'cll': (3, 3),
-				'lung': (3, 2),
-				'metabric-dr': (7, 2),
-				'metabric-pam50': (7, 2),
-				'prostate': (5, 2),
-				'smk': (5, 2),
-				'tcga-2ysurvival': (3, 3),
-				'tcga-tumor-grade': (3, 3),
-				'toxicity': (5, 3)
-			}
-
-			args.rf_max_depth, args.rf_min_samples_leaf = params[args.dataset]
-
-		elif args.model=='lasso':
-			params = {
-				'cll': 10,
-				'lung': 100,
-				'metabric-dr': 100,
-				'metabric-pam50': 10,
-				'prostate': 100,
-				'smk': 1000,
-				'tcga-2ysurvival': 10,
-				'tcga-tumor-grade': 100,
-				'toxicity': 100
-			}
-
-			args.lasso_C = params[args.dataset]
-		
-		elif args.model=='tabnet':
-			params = {
-				'cll': (0.03, 0.001),
-				'lung': (0.02, 0.1),
-				'metabric-dr': (0.03, 0.1),
-				'metabric-pam50': (0.02, 0.001),
-				'prostate': (0.02, 0.01),
-				'smk': (0.03, 0.001),
-				'tcga-2ysurvival': (0.02, 0.01),
-				'tcga-tumor-grade': (0.02, 0.01),
-				'toxicity': (0.03, 0.1)
-			}
-
-			args.lr, args.tabnet_lambda_sparse = params[args.dataset]
-
-		elif args.model=='lgb':
-			params = {
-				'cll': (0.1, 2),
-				'lung': (0.1, 1),
-				'metabric-dr': (0.1, 1),
-				'metabric-pam50': (0.01, 2),
-				'prostate': (0.1, 2),
-				'smk': (0.1, 2),
-				'tcga-2ysurvival': (0.1, 1),
-				'tcga-tumor-grade': (0.1, 1),
-				'toxicity': (0.1, 2)
-			}
-
-			args.lgb_learning_rate, args.lgb_max_depth = params[args.dataset]
-		
-
-	if args.disable_wandb:
-		os.environ['WANDB_MODE'] = 'disabled'
-
-
-	run_experiment(args)
+    main()
