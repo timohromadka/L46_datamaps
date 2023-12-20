@@ -5,11 +5,13 @@ from torchmetrics import Accuracy
 import torch.nn as nn
 import torchvision.models as models
 
+from ..src.dataset_utils import NUM_CLASSES
+
 class TrainingLightningModule(pl.LightningModule):
-    def __init__(self, model, learning_rate=1e-3):
+    def __init__(self, model, args):
         super().__init__()
         self.model = model
-        self.learning_rate = learning_rate
+        self.args = args
         self.accuracy = Accuracy()
 
     def forward(self, x):
@@ -41,13 +43,23 @@ class TrainingLightningModule(pl.LightningModule):
         self.log('test_acc', acc, on_epoch=True, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        if self.args.optimizer == 'Adam':
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+        elif self.args.optimizer == 'AdamW':
+            optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
+        elif self.args.optimizer == 'SGD':
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.args.learning_rate)
+        else:
+            raise ValueError("Unsupported optimizer type")
+
         return optimizer
+
     
     
 class SmallCNNModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
@@ -59,7 +71,7 @@ class SmallCNNModel(pl.LightningModule):
         self.fc_layers = nn.Sequential(
             nn.Linear(64 * 8 * 8, 256),
             nn.ReLU(),
-            nn.Linear(256, 10)  # Assuming 10 classes
+            nn.Linear(256, num_classes)
         )
 
     def forward(self, x):
@@ -71,6 +83,7 @@ class SmallCNNModel(pl.LightningModule):
 class MediumCNNModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 64, 3, padding=1),
             nn.ReLU(),
@@ -86,7 +99,7 @@ class MediumCNNModel(pl.LightningModule):
         self.fc_layers = nn.Sequential(
             nn.Linear(128 * 8 * 8, 512),
             nn.ReLU(),
-            nn.Linear(512, 10)
+            nn.Linear(512, num_classes)
         )
 
     def forward(self, x):
@@ -99,6 +112,7 @@ class MediumCNNModel(pl.LightningModule):
 class LargeCNNModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 128, 3, padding=1),
             nn.ReLU(),
@@ -119,7 +133,7 @@ class LargeCNNModel(pl.LightningModule):
         self.fc_layers = nn.Sequential(
             nn.Linear(512 * 4 * 4, 1024),
             nn.ReLU(),
-            nn.Linear(1024, 10)
+            nn.Linear(1024, num_classes)
         )
 
     def forward(self, x):
@@ -131,8 +145,9 @@ class LargeCNNModel(pl.LightningModule):
 class SmallResNetModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.model = models.resnet18(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, 10)  # Adjust for the number of classes
+        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
         return self.model(x)
@@ -140,8 +155,9 @@ class SmallResNetModel(pl.LightningModule):
 class MediumResNetModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.model = models.resnet34(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, 10)
+        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
         return self.model(x)
@@ -149,8 +165,9 @@ class MediumResNetModel(pl.LightningModule):
 class LargeResNetModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
+        num_classes = NUM_CLASSES[args.dataset]
         self.model = models.resnet50(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, 10)
+        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
         return self.model(x)
