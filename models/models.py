@@ -5,6 +5,9 @@ from torchmetrics import Accuracy
 import torch.nn as nn
 import torchvision.models as models
 
+from torchmetrics import Precision, Recall, F1Score, Accuracy
+
+
 NUM_CLASSES = {
     'cifar10': 10,
     'cifar100': 100,
@@ -20,6 +23,9 @@ class TrainingLightningModule(pl.LightningModule):
         self.model = model
         self.args = args
         self.accuracy = Accuracy(task='multiclass', num_classes=NUM_CLASSES[args.dataset])
+        self.precision = Precision(task='multiclass', num_classes=NUM_CLASSES[args.dataset])
+        self.recall = Recall(task='multiclass', num_classes=NUM_CLASSES[args.dataset])
+        self.f1 = F1Score(task='multiclass', num_classes=NUM_CLASSES[args.dataset])
 
     def forward(self, x):
         return self.model(x)
@@ -29,6 +35,7 @@ class TrainingLightningModule(pl.LightningModule):
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
         acc = self.accuracy(torch.argmax(y_hat, dim=1), y)
+        self.log('train_loss_step', loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log('train_acc', acc, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
@@ -41,13 +48,38 @@ class TrainingLightningModule(pl.LightningModule):
         self.log('val_loss', loss, on_epoch=True, prog_bar=True, logger=True)
         self.log('val_acc', acc, on_epoch=True, prog_bar=True, logger=True)
 
+
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
-        acc = self.accuracy(torch.argmax(y_hat, dim=1), y)
+        preds = torch.argmax(y_hat, dim=1)
+
+        acc = self.accuracy(preds, y)
+        precision = self.precision(preds, y)
+        recall = self.recall(preds, y)
+        f1 = self.f1(preds, y)
+
         self.log('test_loss', loss, on_epoch=True, prog_bar=True, logger=True)
-        self.log('test_acc', acc, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_precision', precision, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_recall', recall, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log('test_f1', f1, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+
+    # # NOTE: https://github.com/Lightning-AI/pytorch-lightning/pull/16520
+    # # migrated to new function names
+    # # have outputs as a parameter (should be removed soon anyways)
+    # def test_epoch_end(self, outputs):
+    #     self.log('test_precision', self.precision.compute(), prog_bar=True, logger=True)
+    #     self.log('test_recall', self.recall.compute(), prog_bar=True, logger=True)
+    #     self.log('test_f1', self.f1.compute(), prog_bar=True, logger=True)
+
+    #     self.precision.reset()
+    #     self.recall.reset()
+    #     self.f1.reset()
+    #     self.accuracy.reset()
+        
+        
 
     def configure_optimizers(self):
         if self.args.optimizer == 'Adam':

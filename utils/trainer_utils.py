@@ -71,5 +71,7 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
     )
  
     trainer.fit(model, data_module)
+    
+    trainer.test(model, dataloaders=data_module.test_dataloader())
 
     return trainer, checkpoint_callback, datamap_callback
