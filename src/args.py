@@ -19,7 +19,8 @@ parser.add_argument('--pretrained', action='store_true', help='If True, use pret
 
 
 # Training Configuration
-parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs.')
+parser.add_argument('--epochs', type=int, default=50, help='Maximum number of epochs for training.')
+parser.add_argument('--max_steps', type=int, default=1000000, help='Maximum number of training steps (batches) for training.')
 parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training.')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer.')
 parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam', 'AdamW', 'SGD'], help='Optimizer for training.')

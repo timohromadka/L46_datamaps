@@ -56,6 +56,7 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
 
     trainer = pl.Trainer(
         max_epochs=args.epochs,
+        # max_steps=args.max_steps, # let's stick with epochs
         gradient_clip_val=args.gradient_clip_val,
         logger=wandb_logger,
         log_every_n_steps=args.logging_interval,
