@@ -5,14 +5,21 @@ from torchmetrics import Accuracy
 import torch.nn as nn
 import torchvision.models as models
 
-from ..src.dataset_utils import NUM_CLASSES
+NUM_CLASSES = {
+    'cifar10': 10,
+    'cifar100': 100,
+    'mnist': 10,
+    'speechcommands': 10,
+    'urbansound8k': 10
+}
+
 
 class TrainingLightningModule(pl.LightningModule):
     def __init__(self, model, args):
         super().__init__()
         self.model = model
         self.args = args
-        self.accuracy = Accuracy()
+        self.accuracy = Accuracy(task='multiclass', num_classes=NUM_CLASSES[args.dataset])
 
     def forward(self, x):
         return self.model(x)
@@ -56,9 +63,12 @@ class TrainingLightningModule(pl.LightningModule):
 
     
     
-class SmallCNNModel(pl.LightningModule):
+class SmallCNNModel(TrainingLightningModule):
     def __init__(self, args):
-        super().__init__()
+        self._create_architecture(args)
+        super().__init__(self, args)
+
+    def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
@@ -80,9 +90,13 @@ class SmallCNNModel(pl.LightningModule):
         x = self.fc_layers(x)
         return x
 
-class MediumCNNModel(pl.LightningModule):
+
+class MediumCNNModel(TrainingLightningModule):
     def __init__(self, args):
-        super().__init__()
+        self._create_architecture(args)
+        super().__init__(self, args)  # Pass 'self' as the model to the parent class
+
+    def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 64, 3, padding=1),
@@ -109,9 +123,13 @@ class MediumCNNModel(pl.LightningModule):
         return x
 
 
-class LargeCNNModel(pl.LightningModule):
+
+class LargeCNNModel(TrainingLightningModule):
     def __init__(self, args):
-        super().__init__()
+        self._create_architecture(args)
+        super().__init__(self, args)  # Pass 'self' as the model to the parent class
+
+    def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         self.conv_layers = nn.Sequential(
             nn.Conv2d(3, 128, 3, padding=1),
@@ -142,42 +160,53 @@ class LargeCNNModel(pl.LightningModule):
         x = self.fc_layers(x)
         return x
 
-class SmallResNetModel(pl.LightningModule):
+
+class SmallResNetModel(TrainingLightningModule):
     def __init__(self, args):
-        super().__init__()
+        model = self._create_model(args)  
+        super().__init__(model, args)
+
+    def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
-        self.model = models.resnet18(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
+        model = models.resnet18(pretrained=args.pretrained)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
 
     def forward(self, x):
         return self.model(x)
 
-class MediumResNetModel(pl.LightningModule):
+class MediumResNetModel(TrainingLightningModule):
     def __init__(self, args):
-        super().__init__()
-        num_classes = NUM_CLASSES[args.dataset]
-        self.model = models.resnet34(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
+        model = self._create_model(args)  
+        super().__init__(model, args)
 
-    def forward(self, x):
-        return self.model(x)
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        model = models.resnet34(pretrained=args.pretrained)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
     
-class LargeResNetModel(pl.LightningModule):
-    def __init__(self, args):
-        super().__init__()
-        num_classes = NUM_CLASSES[args.dataset]
-        self.model = models.resnet50(pretrained=args.pretrained)
-        self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
-
     def forward(self, x):
         return self.model(x)
 
+    
+class LargeResNetModel(TrainingLightningModule):
+    def __init__(self, args):
+        model = self._create_model(args)  
+        super().__init__(model, args)
 
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        model = models.resnet50(pretrained=args.pretrained)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
 
+    def forward(self, x):
+        return self.model(x)
 
 
 def get_model(args):
-    if args.model_type == "cnn":
+    if args.model == "cnn":
         if args.model_size == "small":
             return SmallCNNModel(args)
         elif args.model_size == "medium":
@@ -185,11 +214,15 @@ def get_model(args):
         elif args.model_size == "large":
             return LargeCNNModel(args)
         
-    elif args.model_type == "resnet":
+    elif args.model == "resnet":
         if args.model_size == "small":
             return SmallResNetModel(args)
         elif args.model_size == "medium":
             return MediumResNetModel(args)
         elif args.model_size == "large":
             return LargeResNetModel(args)
+
+    else:
+        raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
+
         
