@@ -54,7 +54,7 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
             patience=args.patience_early_stopping,
         ))
     callbacks.append(LearningRateMonitor(logging_interval='epoch'))
-    print(callbacks)
+
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         # max_steps=args.max_steps, # let's stick with epochs
