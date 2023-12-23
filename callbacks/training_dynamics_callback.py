@@ -11,10 +11,18 @@ from tqdm import tqdm
 # TODO
 # - fix glitchy contiguous tqdm progress bar?
 class DataMapLightningCallback(Callback):
-    def __init__(self, dataloader, outputs_to_probabilities=lambda x, dim: F.softmax(x, dim), gold_labels_probabilities=None, run_name='default_run_name'):
+    def __init__(
+        self, 
+        dataloader, 
+        outputs_to_probabilities=lambda x, dim: F.softmax(x, dim), 
+        gold_labels_probabilities=None, 
+        run_name='default_run_name', 
+        training_dynamics_dir='training_dynamics'
+        ):
         self.dataloader = dataloader
         self.outputs_to_probabilities = outputs_to_probabilities
         self.gold_labels_probabilities = gold_labels_probabilities
+        self.training_dynamics_dir = training_dynamics_dir
         self.run_name = run_name
         self.training_dynamics = {}
         self.correctness_across_epochs = [[] for _ in range(len(dataloader.dataset))]
@@ -35,10 +43,9 @@ class DataMapLightningCallback(Callback):
         print(f'\nEpoch has ended! Now calculating gold labels probabilities.\n')
 
         gold_label_probabilities = []
-        correctness_this_epoch = [] 
         pl_module.eval()
         with torch.no_grad():
-            for batch_idx, batch in tqdm(enumerate(self.dataloader), desc='Calculating gold label probabilities'):
+            for batch_idx, batch in tqdm(enumerate(self.dataloader), desc='Calculating gold label probabilities in batches.', position=0):
                 # Predictions
                 x, y = batch
                 x = x.to(pl_module.device) # lightning will not handle this automatically
@@ -68,7 +75,7 @@ class DataMapLightningCallback(Callback):
     def on_train_end(self, trainer, pl_module):
         print(f'\nTraining has ended! Preparing and uploading training dynamics to WandB.\n')
         
-        for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc='Calculating training dynamics from gold labels probabilities.'):
+        for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc='Calculating training dynamics from gold labels probabilities.', position=0):
             self.training_dynamics[int(idx)] = {
                 'gold_label_probs': self.convert_numpy(cur_gold_label_probs),
                 'confidence': self.convert_numpy(self.confidence(cur_gold_label_probs)),
@@ -78,7 +85,8 @@ class DataMapLightningCallback(Callback):
             }
             
         # First, save to json locally
-        json_file_name = f'{self.run_name}_training_dynamics.json'
+        json_file_name = os.path.join(self.training_dynamics_dir, f'{self.run_name}_training_dynamics.json')
+        os.makedirs(os.path.dirname(json_file_name), exist_ok=True)
         with open(json_file_name, 'w') as file:
             json.dump(self.training_dynamics, file, ensure_ascii=False, indent=4)
 

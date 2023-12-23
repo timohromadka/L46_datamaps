@@ -39,12 +39,13 @@ parser.add_argument('--deterministic', action='store_true', help='Ensures reprod
 parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility.')
 parser.add_argument('--data_augmentation', type=bool, default=True, help='Whether to use data augmentation.')
 parser.add_argument('--logging_interval', type=int, default=100, help='Interval for logging training metrics.')
-parser.add_argument('--checkpoint_freq', type=int, default=3, help='Frequency of saving top-k model checkpoints.')
+# parser.add_argument('--checkpoint_freq', type=int, default=3, help='Frequency of saving top-k model checkpoints.')
+parser.add_argument('--save_top_k', type=int, default=1, help='Select k-best model checkpoints to save for each run.')
 
 # Validation
 parser.add_argument('--metric_model_selection', type=str, default='val_loss',
                     choices=['cross_entropy_loss', 'total_loss', 'balanced_accuracy', 'accuracy', 'lr-Adam', 'train_loss', 'train_loss_step', 'train_acc', 'train_acc_step', 'val_loss', 'val_acc'], help='Metric used for model selection.')
-parser.add_argument('--patience_early_stopping', type=int, default=10,
+parser.add_argument('--patience_early_stopping', type=int, default=3,
                     help='Set number of checks (set by *val_check_interval*) to do early stopping. Minimum training duration: args.val_check_interval * args.patience_early_stopping epochs')
 parser.add_argument('--val_check_interval', type=float, default=1.0, 
                     help='Number of steps at which to check the validation. If set to 1.0, will simply perform the default behaviour of an entire batch before validation.')
@@ -54,6 +55,7 @@ parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Ligh
 
 # Training Dynamics
 parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
+parser.add_argument('--training_dynamics_dir', type=str, default='training_dynamics')
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')
@@ -69,7 +71,6 @@ parser.add_argument('--p_correctness', type=int)
 parser.add_argument('--p_forgetfulness', type=int)
 
 # Weights & Biases (wandb) Integration
-
 parser.add_argument('--wandb_project_name', type=str, default='L46_datamaps')
 parser.add_argument('--wandb_run_name', type=str, default=f'run_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
 parser.add_argument('--wandb_log_freq', type=int, default=10)

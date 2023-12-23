@@ -26,14 +26,12 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
     mode_metric = 'max' if args.metric_model_selection == 'balanced_accuracy' else 'min'
     
     checkpoint_callback = ModelCheckpoint(
-        #monitor=f'valid/{args.metric_model_selection}',
-        monitor=f'{args.metric_model_selection}',
+        monitor=args.metric_model_selection,
         mode=mode_metric,
-        save_last=True,
+        save_top_k=args.save_top_k,
         verbose=True,
-        dirpath=args.checkpoint_dir,
-        filename='{epoch}-{step}-{valid_loss:.2f}',
-        save_top_k=args.checkpoint_freq
+        dirpath=os.path.join(args.checkpoint_dir, args.wandb_run_name),
+        filename='{epoch}_{step}_{valid_loss:.5f}'
     )
     callbacks = [checkpoint_callback, RichProgressBar()]
 
@@ -42,15 +40,15 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
         datamap_callback = DataMapLightningCallback(
             train_unshuffled_loader,
             outputs_to_probabilities=lambda x, dim: F.softmax(x, dim),
-            run_name=args.wandb_run_name
+            run_name=args.wandb_run_name,
+            training_dynamics_dir=args.training_dynamics_dir
         )
         callbacks.append(datamap_callback)
         
         
     if args.patience_early_stopping and not args.train_on_full_data:
         callbacks.append(EarlyStopping(
-            # monitor=f'valid/{args.metric_model_selection}',
-            monitor=f'{args.metric_model_selection}',
+            monitor=args.metric_model_selection,
             mode=mode_metric,
             patience=args.patience_early_stopping,
         ))
