@@ -7,6 +7,11 @@ import torchvision.models as models
 
 from torchmetrics import Precision, Recall, F1Score, Accuracy
 
+# TODO:
+# Add new architectures?
+# - EfficientNet
+# - VisionTransformer
+# - VGG
 
 NUM_CLASSES = {
     'cifar10': 10,
