@@ -19,6 +19,17 @@ class DataMapLightningCallback(Callback):
         self.run_name = run_name
         self.training_dynamics = {}
         
+    def convert_numpy(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, bytes):
+            return obj.decode('utf-8')
+        else:
+            return obj
 
     def on_train_epoch_end(self, trainer, pl_module):
         print(f'\nEpoch has ended! Now calculating gold labels probabilities.\n')
@@ -48,19 +59,19 @@ class DataMapLightningCallback(Callback):
         
         for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc='Calculating training dynamics from gold labels probabilities.'):
             current_dynamics = {}
-            current_dynamics['gold_label_probs'] = [float(value) for value in cur_gold_label_probs.tolist()]  # Convert each value to float
-            current_dynamics['confidence'] = self.confidence(cur_gold_label_probs)
-            current_dynamics['variability'] = self.variability(cur_gold_label_probs)
-            current_dynamics['correctness'] = self.correctness(cur_gold_label_probs)
-            current_dynamics['forgetfulness'] = self.forgetfulness(cur_gold_label_probs)
-            self.training_dynamics[idx] = current_dynamics
+            current_dynamics['gold_label_probs'] = self.convert_numpy(cur_gold_label_probs)
+            current_dynamics['confidence'] = self.convert_numpy(self.confidence(cur_gold_label_probs))
+            current_dynamics['variability'] = self.convert_numpy(self.variability(cur_gold_label_probs))
+            current_dynamics['correctness'] = self.convert_numpy(self.correctness(cur_gold_label_probs))
+            current_dynamics['forgetfulness'] = self.convert_numpy(self.forgetfulness(cur_gold_label_probs))
+            self.training_dynamics[int(idx)] = current_dynamics
             
-        # Save to JSON
+        # First, save to json locally
         json_file_name = f'{self.run_name}_training_dynamics.json'
         with open(json_file_name, 'w') as file:
             json.dump(self.training_dynamics, file, ensure_ascii=False, indent=4)
 
-        # Upload to WandB
+        # Then, upload saved json to wandb
         wandb.save(json_file_name)
 
     @staticmethod
