@@ -35,14 +35,18 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
         filename='{epoch}-{step}-{valid_loss:.2f}',
         save_top_k=args.checkpoint_freq
     )
+    callbacks = [checkpoint_callback, RichProgressBar()]
 
-    datamap_callback = DataMapLightningCallback(
-        train_unshuffled_loader,
-        outputs_to_probabilities=lambda x, dim: F.softmax(x, dim),
-        run_name=args.wandb_run_name
-    )
-    callbacks = [checkpoint_callback, RichProgressBar(), datamap_callback]
 
+    if args.track_training_dynamics:
+        datamap_callback = DataMapLightningCallback(
+            train_unshuffled_loader,
+            outputs_to_probabilities=lambda x, dim: F.softmax(x, dim),
+            run_name=args.wandb_run_name
+        )
+        callbacks.append(datamap_callback)
+        
+        
     if args.patience_early_stopping and not args.train_on_full_data:
         callbacks.append(EarlyStopping(
             # monitor=f'valid/{args.metric_model_selection}',
@@ -50,7 +54,10 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
             mode=mode_metric,
             patience=args.patience_early_stopping,
         ))
+        
+        
     callbacks.append(LearningRateMonitor(logging_interval='epoch'))
+
 
     trainer = pl.Trainer(
         max_epochs=args.epochs,

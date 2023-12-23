@@ -52,8 +52,11 @@ parser.add_argument('--train_on_full_data', action='store_true', dest='train_on_
                     help='Train on the full data (train + validation), leaving only `--test_split` for testing.')
 parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Lightning trick to pick only N batches and iteratively overfit on them. Useful for debugging. Default set to 0, i.e. normal behaviour.')
 
+# Training Dynamics
+parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
+
 # Knowledge Distillation
-parser.add_argument('--distil_experiment', action='store_true', help='If True, this experiment will now be for knowledge distillation.')
+parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')
 parser.add_argument('--teacher_model_path', type=str)
 parser.add_argument('--distillation_temp', type=float, default=2)
 parser.add_argument('--p_hardtolearn', type=int)
