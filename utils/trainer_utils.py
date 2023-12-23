@@ -40,8 +40,9 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
         train_unshuffled_loader,
         args.model,
         args.dataset,
-        outputs_to_probabilities=lambda x: F.softmax(x[0]),
+        outputs_to_probabilities=lambda x, dim: F.softmax(x, dim),
         sparse_labels=True,
+        run_name=args.wandb_run_name
     )
     callbacks = [checkpoint_callback, RichProgressBar(), datamap_callback]
 
@@ -53,7 +54,7 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
             patience=args.patience_early_stopping,
         ))
     callbacks.append(LearningRateMonitor(logging_interval='epoch'))
-
+    print(callbacks)
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         # max_steps=args.max_steps, # let's stick with epochs
