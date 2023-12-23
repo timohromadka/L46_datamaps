@@ -28,16 +28,14 @@ def main():
         # SET UP ARGS
         # ================================
         args = parser.parse_args()
-        project_name = "L46_datamaps"
-        
         # ================================
         # CONFIGURE WANDB
         # ================================
         if args.disable_wandb:
             os.environ['WANDB_MODE'] = 'disabled'
-        wandb.init(project=project_name, config=args)
+        wandb.init(project=args.wandb_project_name, config=args)
     
-        wandb_logger = create_wandb_logger(args, project_name)
+        wandb_logger = create_wandb_logger(args, args.wandb_project_name)
         # wandb.run.name = f"{get_run_name(args)}_{args.suffix_wand_run_name}_{wandb.run.id}"
         wandb.run.name = args.wandb_run_name
 
