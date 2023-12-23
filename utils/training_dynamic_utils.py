@@ -87,9 +87,8 @@ def plot_datamap(
         var2_name='confidence',
         var3_name='correctness',
         dataset_name='cifar10',
-        model_name='',
+        model_name='cnn'
     ):
-
     graph_title = f"Data map for {dataset_name.upper()}, based on {model_name}. Variables: {var1_name}, {var2_name}, {var3_name}"
 
     # Creating a new figure with a 3x4 grid
@@ -139,6 +138,6 @@ def plot_datamap(
 
     graph_save_name = f"datamap_{model_name}_v1{var1_name}_v2{var2_name}_v3{var3_name}"
     image_save_file = os.path.join(output_dir, graph_save_name)
-    plt.savefig(image_save_file)
-
+    #plt.savefig(image_save_file)
+    
     return fig
