@@ -38,10 +38,7 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
 
     datamap_callback = DataMapLightningCallback(
         train_unshuffled_loader,
-        args.model,
-        args.dataset,
         outputs_to_probabilities=lambda x, dim: F.softmax(x, dim),
-        sparse_labels=True,
         run_name=args.wandb_run_name
     )
     callbacks = [checkpoint_callback, RichProgressBar(), datamap_callback]
