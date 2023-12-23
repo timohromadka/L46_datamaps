@@ -11,13 +11,13 @@ from tqdm import tqdm
 # TODO
 # - fix glitchy contiguous tqdm progress bar?
 class DataMapLightningCallback(Callback):
-    def __init__(self, dataloader, model_name, dataset_name, outputs_to_probabilities=lambda x, dim: F.softmax(x, dim), sparse_labels=False, gold_labels_probabilities=None, run_name='default_run_name'):
+    def __init__(self, dataloader, outputs_to_probabilities=lambda x, dim: F.softmax(x, dim), gold_labels_probabilities=None, run_name='default_run_name'):
         self.dataloader = dataloader
         self.outputs_to_probabilities = outputs_to_probabilities
-        self.sparse_labels = sparse_labels
         self.gold_labels_probabilities = gold_labels_probabilities
         self.run_name = run_name
         self.training_dynamics = {}
+        self.correctness_across_epochs = [[] for _ in range(len(dataloader.dataset))]
         
     def convert_numpy(self, obj):
         if isinstance(obj, np.integer):
@@ -35,19 +35,30 @@ class DataMapLightningCallback(Callback):
         print(f'\nEpoch has ended! Now calculating gold labels probabilities.\n')
 
         gold_label_probabilities = []
+        correctness_this_epoch = [] 
         pl_module.eval()
         with torch.no_grad():
-            for batch in tqdm(self.dataloader, desc='Calculating gold label probabilities'):
+            for batch_idx, batch in tqdm(enumerate(self.dataloader), desc='Calculating gold label probabilities'):
+                # Predictions
                 x, y = batch
                 x = x.to(pl_module.device) # lightning will not handle this automatically
                 probabilities = pl_module(x)
-
                 probabilities = self.outputs_to_probabilities(probabilities, dim=1)
-                
-                batch_gold_label_probabilities = probabilities[torch.arange(probabilities.shape[0]), y].cpu().numpy()
 
+                # Correctness calculation (must be done here due to labels needing to be known for argmax calculation)
+                # TODO: MAKE FASTER
+                predicted_labels = torch.argmax(probabilities, dim=1)
+                correct_predictions = (predicted_labels == y.to('cuda')).cpu().numpy()
+
+                for idx, correct in enumerate(correct_predictions):
+                    data_point_index = batch_idx * self.dataloader.batch_size + idx
+                    self.correctness_across_epochs[data_point_index].append(correct)
+
+                # Retrieve just the gold label probabilities
+                batch_gold_label_probabilities = probabilities[torch.arange(probabilities.shape[0]), y].cpu().numpy()
                 gold_label_probabilities.append(batch_gold_label_probabilities)
 
+        # reshape to by a vertical stack (cols = epochs)
         gold_label_probabilities = np.concatenate(gold_label_probabilities)
         if self.gold_labels_probabilities is None:
             self.gold_labels_probabilities = gold_label_probabilities[..., None]
@@ -58,13 +69,13 @@ class DataMapLightningCallback(Callback):
         print(f'\nTraining has ended! Preparing and uploading training dynamics to WandB.\n')
         
         for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc='Calculating training dynamics from gold labels probabilities.'):
-            current_dynamics = {}
-            current_dynamics['gold_label_probs'] = self.convert_numpy(cur_gold_label_probs)
-            current_dynamics['confidence'] = self.convert_numpy(self.confidence(cur_gold_label_probs))
-            current_dynamics['variability'] = self.convert_numpy(self.variability(cur_gold_label_probs))
-            current_dynamics['correctness'] = self.convert_numpy(self.correctness(cur_gold_label_probs))
-            current_dynamics['forgetfulness'] = self.convert_numpy(self.forgetfulness(cur_gold_label_probs))
-            self.training_dynamics[int(idx)] = current_dynamics
+            self.training_dynamics[int(idx)] = {
+                'gold_label_probs': self.convert_numpy(cur_gold_label_probs),
+                'confidence': self.convert_numpy(self.confidence(cur_gold_label_probs)),
+                'variability': self.convert_numpy(self.variability(cur_gold_label_probs)),
+                'correctness': np.mean(self.correctness_across_epochs[idx]),
+                'forgetfulness': self.convert_numpy(self.forgetfulness(cur_gold_label_probs))
+            }
             
         # First, save to json locally
         json_file_name = f'{self.run_name}_training_dynamics.json'
@@ -81,12 +92,6 @@ class DataMapLightningCallback(Callback):
     @staticmethod
     def variability(gold_label_probs):
         return np.std(gold_label_probs)
-
-    @staticmethod
-    def correctness(gold_label_probs):
-        # TODO
-        # UPDATE TO FOLLOW NUMBER OF CLASSES!!!! Not 0.5!!! it's not binary classification
-        return np.mean(gold_label_probs > 0.5)
 
     @staticmethod
     def forgetfulness(gold_label_probs):
