@@ -66,7 +66,8 @@ parser.add_argument('--p_correctness', type=int)
 parser.add_argument('--p_forgetfulness', type=int)
 
 # Weights & Biases (wandb) Integration
-parser.add_argument('--wandb_project', type=str, default='L46_datamaps')
+
+parser.add_argument('--wandb_project_name', type=str, default='L46_datamaps')
 parser.add_argument('--wandb_run_name', type=str, default=f'run_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
 parser.add_argument('--wandb_log_freq', type=int, default=10)
 parser.add_argument('--group', type=str, help="Group runs in wand")
