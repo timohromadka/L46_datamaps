@@ -55,8 +55,9 @@ class TrainingLightningModule(pl.LightningModule):
         loss = F.cross_entropy(y_hat, y)
         preds = torch.argmax(y_hat, dim=1)
         
+        # TODO: make efficient test metric logging
         # The only workaround I could find...
-        # accumulate all and calculate each step...since on_test_epoch_end is bugged out
+        # accumulate all and calculate each step since 'on_test_epoch_end' is bugged
         if batch_idx == 0:
             self.all_preds = preds
             self.all_labels = y
