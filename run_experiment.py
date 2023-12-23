@@ -63,7 +63,7 @@ def main():
         process_results(args)
         
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e}\n Terminating run here.")
 
     finally:
         wandb.finish()
