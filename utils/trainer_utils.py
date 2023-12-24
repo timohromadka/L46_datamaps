@@ -8,23 +8,33 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import RichProgressBar, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+from .knowledge_distillation_utils import kd_training_step, lsp_training_step, label_smoothed_nll_loss
 
 import sys
 sys.path.append("..")
 from callbacks.training_dynamics_callback import DataMapLightningCallback
+from models.models import get_model, load_model_from_run_name
 
-
-def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=None):
+def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     """
     Return 
     - Pytorch Lightning Trainer
     - checkpoint callback
     - datamap callback
     """
+    
+    # ========================
+    # setup
+    # ========================
     pl.seed_everything(args.seed, workers=True)
+    
+    model = get_model(args)
 
     mode_metric = 'max' if args.metric_model_selection == 'balanced_accuracy' else 'min'
     
+    # ========================
+    # bacllbacks
+    # ========================
     checkpoint_callback = ModelCheckpoint(
         monitor=args.metric_model_selection,
         mode=mode_metric,
@@ -56,7 +66,25 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
         
     callbacks.append(LearningRateMonitor(logging_interval='epoch'))
 
+    # ========================
+    # Knowledge Distillation
+    # ========================
+    if args.distil_experiment:
+        teacher_model = load_model_from_run_name(args.teacher_model_run, args)
+        teacher_model.eval()
 
+        if args.knowledge_distillation_loss == 'KD':
+            model.training_step = lambda batch, batch_idx: kd_training_step(
+                batch, batch_idx, model, teacher_model, args.distillation_temp
+            )
+        elif args.knowledge_distillation_loss == 'LSP':
+            model.training_step = lambda batch, batch_idx: lsp_training_step(
+                batch, batch_idx, model, args.label_smoothing
+            )
+
+    # ========================
+    # Run training and testing
+    # ========================
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         # max_steps=args.max_steps, # let's stick with epochs

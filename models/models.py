@@ -1,3 +1,6 @@
+import os
+import glob
+
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
@@ -307,3 +310,40 @@ def get_model(args):
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
 
         
+def load_model_from_run_name(teacher_run_name, args):
+    """
+    Load a model from a given checkpoint path.
+    
+    Args:
+    - checkpoint_path (str): Run name of the teacher model.
+    - args: Arguments needed to initialize the model architecture.
+    
+    Returns:
+    - Loaded model.
+    """
+    teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
+    
+    if not os.path.exists(teacher_model_path):
+        raise FileNotFoundError(f"Directory not found at {teacher_model_path}")
+
+    checkpoint_files = glob.glob(os.path.join(teacher_model_path, '*.ckpt'))
+    if not checkpoint_files:
+        raise FileNotFoundError(f"No .ckpt files found in {teacher_model_path}")
+
+    checkpoint_path = checkpoint_files[0]
+    if args.model == "cnn":
+        model_class = SmallCNNModel if args.model_size == "small" else \
+                      MediumCNNModel if args.model_size == "medium" else \
+                      LargeCNNModel
+    elif args.model == "resnet":
+        model_class = SmallResNetModel if args.model_size == "small" else \
+                      MediumResNetModel if args.model_size == "medium" else \
+                      LargeResNetModel
+    elif args.model == 'efficientnet':
+        model_class = EfficientNetModel
+    else:
+        raise ValueError(f"Unsupported model type: {args.model}")
+
+    model = model_class.load_from_checkpoint(checkpoint_path, args=args)
+
+    return model
