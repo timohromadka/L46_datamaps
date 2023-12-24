@@ -94,7 +94,9 @@ class TrainingLightningModule(pl.LightningModule):
         return optimizer
 
     
-    
+
+# TODO
+# fix CNN model initialization with super class
 class SmallCNNModel(TrainingLightningModule):
     def __init__(self, args):
         self._create_architecture(args)
@@ -127,7 +129,7 @@ class SmallCNNModel(TrainingLightningModule):
 class MediumCNNModel(TrainingLightningModule):
     def __init__(self, args):
         self._create_architecture(args)
-        super().__init__(self, args)  # Pass 'self' as the model to the parent class
+        super().__init__(self, args) 
 
     def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
@@ -161,8 +163,8 @@ class MediumCNNModel(TrainingLightningModule):
 class LargeCNNModel(TrainingLightningModule):
     def __init__(self, args):
         self._create_architecture(args)
-        super().__init__(self, args)  # Pass 'self' as the model to the parent class
-
+        super().__init__(self, args) 
+        
     def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         num_channels = NUM_CHANNELS[args.dataset]
