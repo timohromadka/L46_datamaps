@@ -28,3 +28,10 @@ compute_results/*.csv
 compute_results/*.xlsx
 notebooks/data
 Anaconda3-2023.09-0-Linux-x86_64.sh
+
+compute_results/images/
+compute_results/training_dynamics/
+data/
+model_checkpoints/
+src/lassonet/
+training_dynamics/
