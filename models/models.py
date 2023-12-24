@@ -5,6 +5,11 @@ from torchmetrics import Accuracy
 import torch.nn as nn
 import torchvision.models as models
 
+import sys
+sys.path.append('..')
+from utils.dataset_utils import NUM_CHANNELS, NUM_CLASSES
+
+from efficientnet_pytorch import EfficientNet
 from torchmetrics import Precision, Recall, F1Score, Accuracy
 
 # TODO:
@@ -12,14 +17,6 @@ from torchmetrics import Precision, Recall, F1Score, Accuracy
 # - EfficientNet
 # - VisionTransformer
 # - VGG
-
-NUM_CLASSES = {
-    'cifar10': 10,
-    'cifar100': 100,
-    'mnist': 10,
-    'speechcommands': 10,
-    'urbansound8k': 10
-}
 
 
 class TrainingLightningModule(pl.LightningModule):
@@ -105,8 +102,9 @@ class SmallCNNModel(TrainingLightningModule):
 
     def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels=num_channels, out_channels=32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
@@ -133,8 +131,9 @@ class MediumCNNModel(TrainingLightningModule):
 
     def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 64, 3, padding=1),
+            nn.Conv2d(num_channels, 64, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1),
             nn.ReLU(),
@@ -166,8 +165,9 @@ class LargeCNNModel(TrainingLightningModule):
 
     def _create_architecture(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(3, 128, 3, padding=1),
+            nn.Conv2d(num_channels, 128, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding=1),
             nn.ReLU(),
@@ -203,7 +203,10 @@ class SmallResNetModel(TrainingLightningModule):
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         model = models.resnet18(pretrained=args.pretrained)
+        if num_channels != 3:
+            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
         return model
 
@@ -217,7 +220,10 @@ class MediumResNetModel(TrainingLightningModule):
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         model = models.resnet34(pretrained=args.pretrained)
+        if num_channels != 3:
+            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
         return model
     
@@ -232,12 +238,47 @@ class LargeResNetModel(TrainingLightningModule):
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
         model = models.resnet50(pretrained=args.pretrained)
+        if num_channels != 3:
+            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
         return model
 
     def forward(self, x):
         return self.model(x)
+    
+
+class EfficientNetModel(TrainingLightningModule):
+    def __init__(self, args):
+        model = self._create_model(args)  
+        super().__init__(model, args)
+
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
+        if args.model_size == 'small':
+            efficientnet_model_size = '0'
+        elif args.model_size == 'medium':
+            efficientnet_model_size = '2'
+        elif args.model_size == 'large':
+            efficientnet_model_size = '4'
+        else:
+            raise ValueError("Invalid model size specified. Choose from 'small', 'medium', or 'large'.")
+        efficientnet_size = f'efficientnet-b{efficientnet_model_size}'
+
+        model = EfficientNet.from_pretrained(efficientnet_size, num_classes=num_classes)
+
+        # Modify the first convolutional layer if the number of input channels is not 3
+        if num_channels != 3:
+            original_conv = model._conv_stem
+            model._conv_stem = nn.Conv2d(num_channels, original_conv.out_channels, 
+                                         kernel_size=original_conv.kernel_size, 
+                                         stride=original_conv.stride, 
+                                         padding=original_conv.padding, 
+                                         bias=False)
+
+        return model
 
 
 def get_model(args):
@@ -256,6 +297,9 @@ def get_model(args):
             return MediumResNetModel(args)
         elif args.model_size == "large":
             return LargeResNetModel(args)
+        
+    elif args.model == 'efficientnet':
+        return EfficientNetModel(args)
 
     else:
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
