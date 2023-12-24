@@ -87,13 +87,13 @@ def get_dataloaders(args):
             p_ambiguous=args.p_ambiguous,
             p_hardtolearn=args.p_hardtolearn,
             p_variability=args.p_variability,
-            selector_variability=args.selector_variability, # TODO
+            selector_variability=args.selector_variability, 
             p_confidence=args.p_confidence,
-            selector_confidence=args.selector_confidence,  # TODO
+            selector_confidence=args.selector_confidence,  
             p_correctness=args.p_correctness,
-            selector_correctness=args.selector_correctness,  # TODO
+            selector_correctness=args.selector_correctness,  
             p_forgetfulness=args.p_forgetfulness,
-            selector_forgetfulness=args.selector_forgetfulness  # TODO
+            selector_forgetfulness=args.selector_forgetfulness  
         )
 
         # Create a Subset object for the selected indices

@@ -5,6 +5,7 @@ import pandas as pd
 from pytorch_lightning.loggers import WandbLogger
 
 def create_wandb_logger(args, project_name):
+	wandb.finish()
 	wandb_logger = WandbLogger(
 		project=project_name,
 		group=args.group,
