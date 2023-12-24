@@ -4,6 +4,22 @@ from torchaudio.datasets import SPEECHCOMMANDS #, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning import LightningDataModule
 
+NUM_CLASSES = {
+    'cifar10': 10,
+    'cifar100': 100,
+    'mnist': 10,
+    'speechcommands': 10,
+    'urbansound8k': 10
+}
+
+NUM_CHANNELS = {
+    'cifar10': 3,
+    'cifar100': 3,
+    'mnist': 1,
+    'speechcommands': 3,
+    'urbansound8k': 3
+}
+
 class CustomDataModule(LightningDataModule):
     def __init__(self, train_loader, val_loader, test_loader):
         super().__init__()
