@@ -59,8 +59,9 @@ parser.add_argument('--training_dynamics_dir', type=str, default='training_dynam
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')
-parser.add_argument('--teacher_model_path', type=str)
-parser.add_argument('--distillation_temp', type=float, default=2)
+parser.add_argument('--teacher_model_run', type=str)
+parser.add_argument('--distillation_temp', type=float, default=1)
+parser.add_argument('--knowledge_distillation_loss', type=str, default='KD', choices=['KD', 'LSP'], help='Type of knowledge distillation loss to use (KD or LSP)')
 parser.add_argument('--p_hardtolearn', type=int)
 parser.add_argument('--p_ambiguous', type=int)
 parser.add_argument('--p_easytolearn', type=int)
