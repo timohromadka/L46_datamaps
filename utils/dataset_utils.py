@@ -74,7 +74,7 @@ def get_dataloaders(args):
     else:
         raise ValueError("Unknown dataset")
     
-    if args.prev_run_name_for_dynamics is not None:
+    if args.prev_run_name_for_dynamics:
         # get subset from dataset using previous run dynamics
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
         selected_indices = get_data_subset(
