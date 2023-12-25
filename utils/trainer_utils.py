@@ -2,6 +2,7 @@ import os
 import wandb
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
@@ -72,14 +73,31 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     if args.distil_experiment:
         teacher_model = load_model_from_run_name(args.teacher_model_run, args)
         teacher_model.eval()
+        
+        def get_hard_label_loss_function(loss_type):
+            """
+            Returns the appropriate loss function based on the loss_type argument.
+            """
+            if loss_type == 'cross_entropy':
+                return nn.CrossEntropyLoss()
+            else:
+                raise ValueError(f"Unsupported hard label loss type: {loss_type}")
 
-        if args.knowledge_distillation_loss == 'KD':
-            model.training_step = lambda batch, batch_idx: kd_training_step(
-                batch, batch_idx, model, teacher_model, args.distillation_temp
-            )
-        elif args.knowledge_distillation_loss == 'LSP':
-            model.training_step = lambda batch, batch_idx: lsp_training_step(
-                batch, batch_idx, model, args.label_smoothing
+        def combined_loss(batch, batch_idx, model, teacher_model, alpha):
+            """
+            Calculate the combined loss as a weighted sum of KD loss and hard label loss.
+            """
+            hard_label_loss_function = get_hard_label_loss_function(args.hard_label_loss)
+            
+            student_output = model(batch[0]) 
+            kd_loss = kd_training_step(batch, batch_idx, model, teacher_model, args.distillation_temp)
+            hard_loss = hard_label_loss_function(student_output, batch[1]) # e.g. cross entropy loss
+
+            return alpha * kd_loss + (1 - alpha) * hard_loss
+
+        if args.knowledge_distillation_loss in {'KD', 'LSP'}:
+            model.training_step = lambda batch, batch_idx: combined_loss(
+                batch, batch_idx, model, teacher_model, args.knowledge_distillation_loss_alpha
             )
 
     # ========================
