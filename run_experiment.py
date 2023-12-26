@@ -10,6 +10,9 @@ from utils.dataset_utils import get_dataloaders, CustomDataModule
 from utils.trainer_utils import train_model
 from utils.wandb_utils import create_wandb_logger
 
+import traceback
+import sys
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('Run Experiment Pipeline for Datamaps!')
@@ -54,10 +57,13 @@ def main():
         process_results(args)
         
     except Exception as e:
+        # exit gracefully, so wandb logs errors
+        print(traceback.print_exc(), file=sys.stderr)
         print(f"An error occurred: {e}\n Terminating run here.")
 
     finally:
         wandb.finish()
-
-if __name__ == "__main__":
+        
+if __name__ == '__main__':
     main()
+

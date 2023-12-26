@@ -70,6 +70,8 @@ parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Ligh
 # Training Dynamics
 parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
 parser.add_argument('--training_dynamics_dir', type=str, default='training_dynamics')
+parser.add_argument('--prev_run_name_for_dynamics', type=str, help='The wandb run_name to use to fetch training_dynamics from previous run. Default=None if not training using subset')
+parser.add_argument('--val_split_seed', type=int, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')
@@ -79,14 +81,19 @@ parser.add_argument('--hard_label_loss', type=str, default='cross_entropy', choi
 parser.add_argument('--knowledge_distillation_loss', type=str, default='KD', choices=['KD', 'LSP'], help='Type of knowledge distillation loss to use (KD or LSP)')
 parser.add_argument('--knowledge_distillation_loss_alpha', type=restricted_float, default=0.5, help='Specify the alpha value, as a float, of how much the knowledge distillation loss contributes. Should be in [0,1]')
 parser.add_argument('--knowledge_distillation_label_smoothing', type=restricted_float, default=0.1, help='Specify the label smoothing value, as a float. Should be in [0,1]')
-parser.add_argument('--p_hardtolearn', type=int)
-parser.add_argument('--p_ambiguous', type=int)
-parser.add_argument('--p_easytolearn', type=int)
+parser.add_argument('--p_hardtolearn', type=float, default=0.0)
+parser.add_argument('--p_ambiguous', type=float, default=0.0)
+parser.add_argument('--p_easytolearn', type=float, default=0.0)
 parser.add_argument('--selection_from_low', action='store_true', help='Enables selection from the subset with the lowest values.')
-parser.add_argument('--p_confidence', type=int)
-parser.add_argument('--p_variability', type=int)
-parser.add_argument('--p_correctness', type=int)
-parser.add_argument('--p_forgetfulness', type=int)
+parser.add_argument('--p_confidence', type=float, default=0.0)
+parser.add_argument('--p_variability', type=float, default=0.0)
+parser.add_argument('--p_correctness', type=float, default=0.0)
+parser.add_argument('--p_forgetfulness', type=float, default=0.0)
+parser.add_argument('--selector_variability', type=str, choices=['top', 'bottom'], default='top')
+parser.add_argument('--selector_confidence', type=str, choices=['top', 'bottom'], default='top')
+parser.add_argument('--selector_correctness', type=str, choices=['top', 'bottom'], default='top')
+parser.add_argument('--selector_forgetfulness', type=str, choices=['top', 'bottom'], default='top')
+
 
 # Weights & Biases (wandb) Integration
 parser.add_argument('--wandb_project_name', type=str, default='L46_datamaps')
