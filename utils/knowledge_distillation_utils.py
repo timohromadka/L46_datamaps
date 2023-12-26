@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 def kd_training_step(batch, batch_idx, student_model, teacher_model, temperature, alpha):
     x, y = batch
@@ -41,3 +42,13 @@ def label_smoothed_nll_loss(lprobs, target, smoothing=0.1):
     smooth_loss = -lprobs.mean(dim=-1)
     loss = (1 - smoothing) * nll_loss + smoothing * smooth_loss
     return loss.sum()
+
+
+def get_hard_label_loss_function(loss_type):
+    """
+    Returns the appropriate loss function based on the loss_type argument.
+    """
+    if loss_type == 'cross_entropy':
+        return nn.CrossEntropyLoss()
+    else:
+        raise ValueError(f"Unsupported hard label loss type: {loss_type}")
