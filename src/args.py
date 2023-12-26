@@ -1,6 +1,20 @@
 import argparse
 from datetime import datetime
 
+# ======================================
+# arg checking utils
+# ======================================
+def restricted_float(x):
+    try:
+        x = float(x)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{x} not a floating-point literal")
+
+    if x < 0.0 or x > 1.0:
+        raise argparse.ArgumentTypeError(f"{x} not in range [0,1]")
+    return x
+# ======================================
+
 parser = argparse.ArgumentParser(description='Training Dynamics Guided Knowledge Distillation.')
 
 # ======================================
@@ -63,7 +77,8 @@ parser.add_argument('--teacher_model_run', type=str)
 parser.add_argument('--distillation_temp', type=float, default=1)
 parser.add_argument('--hard_label_loss', type=str, default='cross_entropy', choices=['cross_entropy']) # add more if needed
 parser.add_argument('--knowledge_distillation_loss', type=str, default='KD', choices=['KD', 'LSP'], help='Type of knowledge distillation loss to use (KD or LSP)')
-parser.add_argument('--knowledge_distillation_loss_alpha', type=float, default=1, help='Specify the alpha value, as a float, of how much the knowledge distillation loss contributes.')
+parser.add_argument('--knowledge_distillation_loss_alpha', type=restricted_float, default=0.5, help='Specify the alpha value, as a float, of how much the knowledge distillation loss contributes. Should be in [0,1]')
+parser.add_argument('--knowledge_distillation_label_smoothing', type=restricted_float, default=0.1, help='Specify the label smoothing value, as a float. Should be in [0,1]')
 parser.add_argument('--p_hardtolearn', type=int)
 parser.add_argument('--p_ambiguous', type=int)
 parser.add_argument('--p_easytolearn', type=int)

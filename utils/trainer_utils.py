@@ -83,21 +83,28 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
             else:
                 raise ValueError(f"Unsupported hard label loss type: {loss_type}")
 
-        def combined_loss(batch, batch_idx, model, teacher_model, alpha):
+        def combined_loss(batch, batch_idx, model, teacher_model):
             """
             Calculate the combined loss as a weighted sum of KD loss and hard label loss.
             """
-            hard_label_loss_function = get_hard_label_loss_function(args.hard_label_loss)
+            # hard_label_loss_function = get_hard_label_loss_function(args.hard_label_loss)
             
-            student_output = model(batch[0]) 
-            kd_loss = kd_training_step(batch, batch_idx, model, teacher_model, args.distillation_temp)
-            hard_loss = hard_label_loss_function(student_output, batch[1]) # e.g. cross entropy loss
+            # student_output = model(batch[0]) 
+            loss = kd_training_step(batch, batch_idx, model, teacher_model, args.distillation_temp, args.knowledge_distillation_loss_alpha)
 
-            return alpha * kd_loss + (1 - alpha) * hard_loss
+            return loss
+            # @Timo kd_training_step already combined the hard_loss and kd_loss terms, 
+            # so it is incorrect to do so again in the combined_loss function 
+            # We could move the combination of the losses to happen here instead, 
+            # but then that would cause the logging inside the kd_training_step to behave incorrectly. 
+            
+            # removed lines:
+            # hard_loss = hard_label_loss_function(student_output, batch[1]) # e.g. cross entropy loss
+            # return alpha * kd_loss + (1 - alpha) * hard_loss
 
-        if args.knowledge_distillation_loss in {'KD', 'LSP'}:
+        if args.knowledge_distillation_loss in {'KD', 'LSP'}: # @Timo why both LSP and KD when the combined_loss fn doesn't do LSP?
             model.training_step = lambda batch, batch_idx: combined_loss(
-                batch, batch_idx, model, teacher_model, args.knowledge_distillation_loss_alpha
+                batch, batch_idx, model, teacher_model
             )
 
     # ========================

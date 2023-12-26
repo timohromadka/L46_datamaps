@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-def kd_training_step(batch, batch_idx, student_model, teacher_model, temperature):
+def kd_training_step(batch, batch_idx, student_model, teacher_model, temperature, alpha):
     x, y = batch
     student_logits = student_model(x)
     with torch.no_grad():
@@ -14,7 +14,7 @@ def kd_training_step(batch, batch_idx, student_model, teacher_model, temperature
     ) * (temperature ** 2)
 
     hard_loss = F.cross_entropy(student_logits, y)
-    loss = KD_loss + hard_loss
+    loss = alpha*KD_loss + (1-alpha)*hard_loss
 
     # Logging and other metrics calculation
     acc = student_model.accuracy(torch.argmax(student_logits, dim=1), y)
