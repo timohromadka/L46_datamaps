@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 import pytorch_lightning as pl
 
 from src.args import parser
-from utils.dataset_utils import get_dataloaders, CustomDataModule
+from utils.dataset_utils import get_dataloaders, CustomDataModule, load_val_split_seed_from_run_name
 from utils.trainer_utils import train_model
 from utils.wandb_utils import create_wandb_logger
 
@@ -44,6 +44,9 @@ def main():
         # ================================
         # FETCH DATASET
         # ================================
+        
+        if args.distil_experiment: # fetching the val split seed from the distiller
+            args.val_split_seed = load_val_split_seed_from_run_name(args.teacher_model_run, args)
         train_loader, train_unshuffled_loader, val_loader, test_loader = get_dataloaders(args)
         data_module = CustomDataModule(train_loader, val_loader, test_loader)
         

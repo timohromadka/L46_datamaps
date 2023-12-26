@@ -6,7 +6,9 @@ from pytorch_lightning import LightningDataModule
 from utils.wandb_utils import get_training_dynamics_from_run_name
 from utils.training_dynamic_utils import get_data_subset
 from torch.utils.data.dataset import Subset
-
+import os
+import glob
+from models.models import load_checkpoint
 
 NUM_CLASSES = {
     'cifar10': 10,
@@ -40,7 +42,25 @@ class CustomDataModule(LightningDataModule):
     def test_dataloader(self):
         return self.test_loader
 
+def load_val_split_seed_from_run_name(teacher_run_name, args):
+    """
+    Load a val_split_seed from a given checkpoint path.
+    
+    Args:
+    - teacher_run_name (str): Run name of the teacher model.
+    - args: Arguments needed to initialize the model architecture.
+    
+    Returns:
+    - Loaded val_split_seed, int.
+    """
 
+    # Load the checkpoint to access the configuration
+    checkpoint = load_checkpoint(teacher_run_name, args)
+    config = checkpoint.get('config')
+    val_split_seed = config.get('val_split_seed')
+    
+    return val_split_seed
+    
 def get_dataloaders(args):
     # Define transformations for image datasets
     transform = transforms.Compose([
@@ -79,6 +99,8 @@ def get_dataloaders(args):
     if args.val_split_seed:
         local_generator.manual_seed(args.val_split_seed)
     else:
+        if args.prev_run_name_for_dynamics:
+            raise Exception("if using datamapped subset for training, val split seed for prev run must be provided.")
         args.val_split_seed = local_generator.initial_seed()
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size
