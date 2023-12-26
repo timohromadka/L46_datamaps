@@ -10,7 +10,7 @@ import torchvision.models as models
 
 import sys
 sys.path.append('..')
-from utils.dataset_utils import NUM_CHANNELS, NUM_CLASSES
+from utils.constants import NUM_CHANNELS, NUM_CLASSES
 
 from efficientnet_pytorch import EfficientNet
 from torchmetrics import Precision, Recall, F1Score, Accuracy

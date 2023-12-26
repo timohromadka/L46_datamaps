@@ -3,28 +3,13 @@ from torchvision import datasets, transforms
 from torchaudio.datasets import SPEECHCOMMANDS #, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning import LightningDataModule
-from utils.wandb_utils import get_training_dynamics_from_run_name
-from utils.training_dynamic_utils import get_data_subset
 from torch.utils.data.dataset import Subset
 import os
 import glob
 from models.models import load_checkpoint
+from utils.wandb_utils import get_training_dynamics_from_run_name
+from utils.training_dynamic_utils import get_data_subset
 
-NUM_CLASSES = {
-    'cifar10': 10,
-    'cifar100': 100,
-    'mnist': 10,
-    'speechcommands': 10,
-    'urbansound8k': 10
-}
-
-NUM_CHANNELS = {
-    'cifar10': 3,
-    'cifar100': 3,
-    'mnist': 1,
-    'speechcommands': 3,
-    'urbansound8k': 3
-}
 
 class CustomDataModule(LightningDataModule):
     def __init__(self, train_loader, val_loader, test_loader):
@@ -60,39 +45,45 @@ def load_val_split_seed_from_run_name(teacher_run_name, args):
     val_split_seed = config.get('val_split_seed')
     
     return val_split_seed
-    
-def get_dataloaders(args):
+
+def get_train_test_sets(dataset_name):
     # Define transformations for image datasets
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    if args.dataset == 'cifar10':
+    if dataset_name == 'cifar10':
         train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'cifar100':
+    elif dataset_name == 'cifar100':
         train_dataset = datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'mnist':
+    elif dataset_name == 'mnist':
         train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'speechcommands':
+    elif dataset_name == 'speechcommands':
         train_dataset = SPEECHCOMMANDS(root='./data', subset='training')
         test_dataset = SPEECHCOMMANDS(root='./data', subset='testing')
         # TODO
         # transform to spectrograms, or keep at waveform?
         
-    # elif args.dataset == 'urbansound8k':
+    # elif dataset_name == 'urbansound8k':
     #     train_dataset = URBANSOUND8K(root='./data', subset='training')
     #     test_dataset = URBANSOUND8K(root='./data', subset='testing')
     #     # TODO
     #     # transform to spectrograms, or keep at waveform?
     else:
         raise ValueError("Unknown dataset")
+    
+    return train_dataset, test_dataset
+    
+    
+def get_dataloaders(args):
+    train_dataset, test_dataset = get_train_test_sets(args.dataset)
     
     # Split the training dataset into train and validation
     local_generator = torch.Generator()
