@@ -57,6 +57,7 @@ parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Ligh
 parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
 parser.add_argument('--training_dynamics_dir', type=str, default='training_dynamics')
 parser.add_argument('--prev_run_name_for_dynamics', type=str, help='The wandb run_name to use to fetch training_dynamics from previous run. Default=None if not training using subset')
+parser.add_argument('--val_split_seed', type=int, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')

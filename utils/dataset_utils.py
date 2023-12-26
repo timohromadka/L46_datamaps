@@ -74,6 +74,16 @@ def get_dataloaders(args):
     else:
         raise ValueError("Unknown dataset")
     
+    # Split the training dataset into train and validation
+    local_generator = torch.Generator()
+    if args.val_split_seed:
+        local_generator.manual_seed(args.val_split_seed)
+    else:
+        args.val_split_seed = local_generator.initial_seed()
+    train_size = int(0.8 * len(train_dataset))
+    val_size = len(train_dataset) - train_size
+    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size], generator=local_generator)
+    
     if args.prev_run_name_for_dynamics:
         # get subset from dataset using previous run dynamics
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
@@ -98,10 +108,6 @@ def get_dataloaders(args):
 
         # Create a Subset object for the selected indices
         train_dataset = Subset(train_dataset, selected_indices)
-    # Split the training dataset into train and validation
-    train_size = int(0.8 * len(train_dataset))
-    val_size = len(train_dataset) - train_size
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
