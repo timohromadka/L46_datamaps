@@ -6,7 +6,6 @@ from typing import Dict, List, Tuple
 import pytorch_lightning as pl
 
 from src.args import parser
-from models.models import get_model
 from utils.dataset_utils import get_dataloaders, CustomDataModule
 from utils.trainer_utils import train_model
 from utils.wandb_utils import create_wandb_logger
@@ -42,12 +41,6 @@ def main():
         # wandb.run.name = f"{get_run_name(args)}_{args.suffix_wand_run_name}_{wandb.run.id}"
         wandb.run.name = args.wandb_run_name
 
-
-        # ================================
-        # FETCH MODEL
-        # ================================
-        model = get_model(args)
-
         # ================================
         # FETCH DATASET
         # ================================
@@ -58,7 +51,7 @@ def main():
         # UNDERGO TRAINING
         # ================================
         trainer, checkpoint_callback, datamap_callback = train_model(
-            args, model, data_module, train_unshuffled_loader, wandb_logger
+            args, data_module, train_unshuffled_loader, wandb_logger
         )
         
         process_results(args)

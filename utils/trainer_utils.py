@@ -2,29 +2,40 @@ import os
 import wandb
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import RichProgressBar, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+from .knowledge_distillation_utils import kd_training_step, lsp_training_step, label_smoothed_nll_loss
 
 import sys
 sys.path.append("..")
 from callbacks.training_dynamics_callback import DataMapLightningCallback
+from models.models import get_model, load_model_from_run_name
 
-
-def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=None):
+def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     """
     Return 
     - Pytorch Lightning Trainer
     - checkpoint callback
     - datamap callback
     """
+    
+    # ========================
+    # setup
+    # ========================
     pl.seed_everything(args.seed, workers=True)
+    
+    model = get_model(args)
 
     mode_metric = 'max' if args.metric_model_selection == 'balanced_accuracy' else 'min'
     
+    # ========================
+    # bacllbacks
+    # ========================
     checkpoint_callback = ModelCheckpoint(
         monitor=args.metric_model_selection,
         mode=mode_metric,
@@ -56,7 +67,49 @@ def train_model(args, model, data_module, train_unshuffled_loader, wandb_logger=
         
     callbacks.append(LearningRateMonitor(logging_interval='epoch'))
 
+    # ========================
+    # Knowledge Distillation
+    # ========================
+    if args.distil_experiment:
+        teacher_model = load_model_from_run_name(args.teacher_model_run, args)
+        teacher_model.eval()
+        
+        def get_hard_label_loss_function(loss_type):
+            """
+            Returns the appropriate loss function based on the loss_type argument.
+            """
+            if loss_type == 'cross_entropy':
+                return nn.CrossEntropyLoss()
+            else:
+                raise ValueError(f"Unsupported hard label loss type: {loss_type}")
 
+        def combined_loss(batch, batch_idx, model, teacher_model):
+            """
+            Calculate the combined loss as a weighted sum of KD loss and hard label loss.
+            """
+            # hard_label_loss_function = get_hard_label_loss_function(args.hard_label_loss)
+            
+            # student_output = model(batch[0]) 
+            loss = kd_training_step(batch, batch_idx, model, teacher_model, args.distillation_temp, args.knowledge_distillation_loss_alpha)
+
+            return loss
+            # @Timo kd_training_step already combined the hard_loss and kd_loss terms, 
+            # so it is incorrect to do so again in the combined_loss function 
+            # We could move the combination of the losses to happen here instead, 
+            # but then that would cause the logging inside the kd_training_step to behave incorrectly. 
+            
+            # removed lines:
+            # hard_loss = hard_label_loss_function(student_output, batch[1]) # e.g. cross entropy loss
+            # return alpha * kd_loss + (1 - alpha) * hard_loss
+
+        if args.knowledge_distillation_loss in {'KD', 'LSP'}: # @Timo why both LSP and KD when the combined_loss fn doesn't do LSP?
+            model.training_step = lambda batch, batch_idx: combined_loss(
+                batch, batch_idx, model, teacher_model
+            )
+
+    # ========================
+    # Run training and testing
+    # ========================
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         # max_steps=args.max_steps, # let's stick with epochs
