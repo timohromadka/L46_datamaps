@@ -147,7 +147,7 @@ def plot_datamap(
 
 
 
-def get_data_points_from_indices(indices, dataset, pretty_display=False):
+def get_data_points_from_indices(indices, dataset, classes, pretty_display=False, fig_save_name='my_fig.png'):
     """
     Fetch data points from the specified dataset at specified indices.
     """
@@ -178,17 +178,20 @@ def get_data_points_from_indices(indices, dataset, pretty_display=False):
             col = idx % nrow
             x = col * image_size_x + padding
             y = row * image_size_y + padding
-            label_str = f"{label} ({dataset.classes[label]})"
+            label_str = f"{label} ({classes[label]})"
+            # label_str = f"{label} ({dataset.classes[label]})"
             plt.text(x, y, f"{indices[idx]}\n{label_str}", color='white', fontsize=12, ha='left', va='top')
 
         plt.axis('off')
+        plt.savefig(fig_save_name, bbox_inches='tight')
         plt.show()
     else:
         # Display images one by one
         for i, image in enumerate(images):
             plt.figure()
             plt.imshow(image.permute(1, 2, 0))
-            plt.title(f"Index: {indices[i]}, Label: {labels[i]} ({dataset.classes[labels[i]]})")
+            plt.title(f"Index: {indices[i]}, Label: {labels[i]} ({classes[labels[i]]})")
+            # plt.title(f"Index: {indices[i]}, Label: {labels[i]} ({dataset.classes[labels[i]]})")
             plt.axis('off')
             plt.show()
 
