@@ -1,3 +1,6 @@
+import os
+import glob
+
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
@@ -92,6 +95,21 @@ class TrainingLightningModule(pl.LightningModule):
             raise ValueError("Unsupported optimizer type")
 
         return optimizer
+    
+    def on_train_end(self):
+        super().on_train_end()
+
+        checkpoint_path = self.trainer.checkpoint_callback.best_model_path
+        if checkpoint_path:
+            checkpoint = torch.load(checkpoint_path)
+            
+            # keep track of the model and model_size so that it can be automatically configured given JUST the run path
+            model_config = {
+                'model_type': self.args.model,
+                'model_size': self.args.model_size
+            }
+            checkpoint['config'] = model_config
+            torch.save(checkpoint, checkpoint_path)
 
     
 
@@ -307,3 +325,52 @@ def get_model(args):
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
 
         
+def load_model_from_run_name(teacher_run_name, args):
+    """
+    Load a model from a given checkpoint path.
+    
+    Args:
+    - teacher_run_name (str): Run name of the teacher model.
+    - args: Arguments needed to initialize the model architecture.
+    
+    Returns:
+    - Loaded model.
+    """
+    teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
+    
+    if not os.path.exists(teacher_model_path):
+        raise FileNotFoundError(f"Directory not found at {teacher_model_path}")
+
+    checkpoint_files = glob.glob(os.path.join(teacher_model_path, '*.ckpt'))
+    if not checkpoint_files:
+        raise FileNotFoundError(f"No .ckpt files found in {teacher_model_path}")
+
+    checkpoint_path = checkpoint_files[0]
+
+    # Load the checkpoint to access the configuration
+    checkpoint = torch.load(checkpoint_path)
+    config = checkpoint.get('config')
+
+    if not config:
+        raise ValueError(f"No config found in checkpoint at {checkpoint_path}")
+
+    # Determine the model class based on the configuration
+    model_type = config.get('model_type')
+    model_size = config.get('model_size')
+
+    if model_type == "cnn":
+        model_class = SmallCNNModel if model_size == "small" else \
+                      MediumCNNModel if model_size == "medium" else \
+                      LargeCNNModel
+    elif model_type == "resnet":
+        model_class = SmallResNetModel if model_size == "small" else \
+                      MediumResNetModel if model_size == "medium" else \
+                      LargeResNetModel
+    elif model_type == 'efficientnet':
+        model_class = EfficientNetModel
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
+
+    model = model_class.load_from_checkpoint(checkpoint_path, args=args)
+
+    return model

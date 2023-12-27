@@ -3,6 +3,10 @@ from torchvision import datasets, transforms
 from torchaudio.datasets import SPEECHCOMMANDS #, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning import LightningDataModule
+from utils.wandb_utils import get_training_dynamics_from_run_name
+from utils.training_dynamic_utils import get_data_subset
+from torch.utils.data.dataset import Subset
+
 
 NUM_CLASSES = {
     'cifar10': 10,
@@ -69,11 +73,41 @@ def get_dataloaders(args):
     #     # transform to spectrograms, or keep at waveform?
     else:
         raise ValueError("Unknown dataset")
-
+    
     # Split the training dataset into train and validation
+    local_generator = torch.Generator()
+    if args.val_split_seed:
+        local_generator.manual_seed(args.val_split_seed)
+    else:
+        args.val_split_seed = local_generator.initial_seed()
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size], generator=local_generator)
+    
+    if args.prev_run_name_for_dynamics:
+        # get subset from dataset using previous run dynamics
+        gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
+        selected_indices = get_data_subset(
+            list(range(len(train_dataset))),
+            variability,
+            confidence,
+            correctness,
+            forgetfulness,
+            p_easytolearn=args.p_easytolearn,
+            p_ambiguous=args.p_ambiguous,
+            p_hardtolearn=args.p_hardtolearn,
+            p_variability=args.p_variability,
+            selector_variability=args.selector_variability, 
+            p_confidence=args.p_confidence,
+            selector_confidence=args.selector_confidence,  
+            p_correctness=args.p_correctness,
+            selector_correctness=args.selector_correctness,  
+            p_forgetfulness=args.p_forgetfulness,
+            selector_forgetfulness=args.selector_forgetfulness  
+        )
+
+        # Create a Subset object for the selected indices
+        train_dataset = Subset(train_dataset, selected_indices)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
