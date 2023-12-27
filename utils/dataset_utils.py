@@ -46,7 +46,7 @@ def load_val_split_seed_from_run_name(teacher_run_name, args):
     
     return val_split_seed
 
-def get_train_test_sets(dataset_name):
+def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dynamics):
     # Define transformations for image datasets
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -79,24 +79,25 @@ def get_train_test_sets(dataset_name):
     else:
         raise ValueError("Unknown dataset")
     
-    return train_dataset, test_dataset
-    
-    
-def get_dataloaders(args):
-    train_dataset, test_dataset = get_train_test_sets(args.dataset)
-    
     # Split the training dataset into train and validation
     local_generator = torch.Generator()
-    if args.val_split_seed:
-        local_generator.manual_seed(args.val_split_seed)
+    if val_split_seed:
+        local_generator.manual_seed(val_split_seed)
     else:
-        if args.prev_run_name_for_dynamics:
+        if prev_run_name_for_dynamics:
             raise Exception("if using datamapped subset for training, val split seed for prev run must be provided.")
-        args.val_split_seed = local_generator.initial_seed()
+        val_split_seed = local_generator.initial_seed()
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size
     train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size], generator=local_generator)
     
+    
+    return train_dataset, val_dataset, test_dataset
+    
+    
+def get_dataloaders(args):
+    train_dataset, val_dataset, test_dataset = get_train_val_test_sets(args.dataset, args.val_split_seed, args.prev_run_name_for_dynamics)
+
     if args.prev_run_name_for_dynamics:
         # get subset from dataset using previous run dynamics
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
