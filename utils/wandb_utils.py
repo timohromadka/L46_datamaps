@@ -82,3 +82,19 @@ def get_training_dynamics_from_run_name(project_name, entity_name, run_name):
     training_dynamics = get_training_dynamics(api, project_name, entity_name, run_id, run_name)
     
     return training_dynamics
+
+def get_val_split_seed_from_run_name(teacher_run_name, project_name, entity_name):
+    run_df = get_runs_dataframe(project_name, entity_name)
+    matching_run = run_df.loc[run_df['name'] == teacher_run_name]
+
+    # no match found on teacher_run_name
+    if matching_run.empty:
+        raise ValueError(f"No run found with name {teacher_run_name}")
+
+    val_split_seed = matching_run['val_split_seed'].iloc[0]
+
+    # make sure that the val_split_seed is definitely an INTEGER, albeit in float format
+    if not (isinstance(val_split_seed, int) or isinstance(val_split_seed, float) and val_split_seed.is_integer): 
+        raise ValueError(f"Value of val_split_seed '{val_split_seed}' is not a valid integer")
+
+    return int(val_split_seed)
