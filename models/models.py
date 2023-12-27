@@ -10,7 +10,7 @@ import torchvision.models as models
 
 import sys
 sys.path.append('..')
-from utils.dataset_utils import NUM_CHANNELS, NUM_CLASSES
+from utils.constants import NUM_CHANNELS, NUM_CLASSES
 
 from efficientnet_pytorch import EfficientNet
 from torchmetrics import Precision, Recall, F1Score, Accuracy
@@ -106,7 +106,8 @@ class TrainingLightningModule(pl.LightningModule):
             # keep track of the model and model_size so that it can be automatically configured given JUST the run path
             model_config = {
                 'model_type': self.args.model,
-                'model_size': self.args.model_size
+                'model_size': self.args.model_size,
+                'val_split_seed': self.args.val_split_seed
             }
             checkpoint['config'] = model_config
             torch.save(checkpoint, checkpoint_path)
@@ -324,17 +325,16 @@ def get_model(args):
     else:
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
 
-        
-def load_model_from_run_name(teacher_run_name, args):
+def load_checkpoint(teacher_run_name, args):
     """
-    Load a model from a given checkpoint path.
+    Load a model checkpoint from a given checkpoint path.
     
     Args:
     - teacher_run_name (str): Run name of the teacher model.
     - args: Arguments needed to initialize the model architecture.
     
     Returns:
-    - Loaded model.
+    - model checkpoint.
     """
     teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
     
@@ -349,10 +349,27 @@ def load_model_from_run_name(teacher_run_name, args):
 
     # Load the checkpoint to access the configuration
     checkpoint = torch.load(checkpoint_path)
+    
+    return checkpoint
+        
+def load_model_from_run_name(teacher_run_name, args):
+    """
+    Load a model from a given checkpoint path.
+    
+    Args:
+    - teacher_run_name (str): Run name of the teacher model.
+    - args: Arguments needed to initialize the model architecture.
+    
+    Returns:
+    - Loaded model.
+    """
+
+    # Load the checkpoint to access the configuration
+    checkpoint = load_checkpoint(teacher_run_name, args)
     config = checkpoint.get('config')
 
     if not config:
-        raise ValueError(f"No config found in checkpoint at {checkpoint_path}")
+        raise ValueError(f"No config found in checkpoint at {teacher_run_name}")
 
     # Determine the model class based on the configuration
     model_type = config.get('model_type')

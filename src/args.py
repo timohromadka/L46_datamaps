@@ -74,7 +74,7 @@ parser.add_argument('--prev_run_name_for_dynamics', type=str, help='The wandb ru
 parser.add_argument('--val_split_seed', type=int, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
 
 # Knowledge Distillation
-parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be for knowledge distillation.')
+parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be knowledge distillation.')
 parser.add_argument('--teacher_model_run', type=str)
 parser.add_argument('--distillation_temp', type=float, default=1)
 parser.add_argument('--hard_label_loss', type=str, default='cross_entropy', choices=['cross_entropy']) # add more if needed

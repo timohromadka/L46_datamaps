@@ -4,6 +4,8 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.neighbors import KDTree
+import torch
+from torchvision.utils import make_grid
 
 def get_data_subset(
         indexes,
@@ -141,3 +143,60 @@ def plot_datamap(
     #plt.savefig(image_save_file)
     
     return fig
+
+
+
+
+def get_data_points_from_indices(indices, dataset, pretty_display=False):
+    """
+    Fetch data points from the specified dataset at specified indices.
+    """
+    data_points = [dataset[i] for i in indices]
+    images, labels = zip(*data_points)
+
+    if pretty_display:
+        images = torch.stack(images)
+        num_channels = images.shape[1]
+
+        if num_channels == 1:
+            images = images.repeat(1, 3, 1, 1)
+
+        nrow = 5
+        padding = 2  # assuming a padding of 2 pixels
+        grid = make_grid(images, nrow=nrow, padding=padding)
+        plt.figure(figsize=(15, 15))
+        np_grid = np.transpose(grid.numpy(), (1, 2, 0))
+        plt.imshow(np_grid)
+
+        # Calculate the size of the images plus padding
+        image_size_x = (np_grid.shape[1] // nrow)
+        image_size_y = (np_grid.shape[0] // ((len(images) + nrow - 1) // nrow))
+        
+        for idx, (image, label) in enumerate(zip(images, labels)):
+            # Calculate the position of the top left corner of the image in the grid
+            row = idx // nrow
+            col = idx % nrow
+            x = col * image_size_x + padding
+            y = row * image_size_y + padding
+            label_str = f"{label} ({dataset.classes[label]})"
+            plt.text(x, y, f"{indices[idx]}\n{label_str}", color='white', fontsize=12, ha='left', va='top')
+
+        plt.axis('off')
+        plt.show()
+    else:
+        # Display images one by one
+        for i, image in enumerate(images):
+            plt.figure()
+            plt.imshow(image.permute(1, 2, 0))
+            plt.title(f"Index: {indices[i]}, Label: {labels[i]} ({dataset.classes[labels[i]]})")
+            plt.axis('off')
+            plt.show()
+
+    return data_points
+
+
+    
+    
+
+
+    

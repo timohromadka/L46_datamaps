@@ -3,26 +3,13 @@ from torchvision import datasets, transforms
 from torchaudio.datasets import SPEECHCOMMANDS #, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning import LightningDataModule
+from torch.utils.data.dataset import Subset
+import os
+import glob
+from models.models import load_checkpoint
 from utils.wandb_utils import get_training_dynamics_from_run_name
 from utils.training_dynamic_utils import get_data_subset
-from torch.utils.data.dataset import Subset
 
-
-NUM_CLASSES = {
-    'cifar10': 10,
-    'cifar100': 100,
-    'mnist': 10,
-    'speechcommands': 10,
-    'urbansound8k': 10
-}
-
-NUM_CHANNELS = {
-    'cifar10': 3,
-    'cifar100': 3,
-    'mnist': 1,
-    'speechcommands': 3,
-    'urbansound8k': 3
-}
 
 class CustomDataModule(LightningDataModule):
     def __init__(self, train_loader, val_loader, test_loader):
@@ -40,33 +27,51 @@ class CustomDataModule(LightningDataModule):
     def test_dataloader(self):
         return self.test_loader
 
+def load_val_split_seed_from_run_name(teacher_run_name, args):
+    """
+    Load a val_split_seed from a given checkpoint path.
+    
+    Args:
+    - teacher_run_name (str): Run name of the teacher model.
+    - args: Arguments needed to initialize the model architecture.
+    
+    Returns:
+    - Loaded val_split_seed, int.
+    """
 
-def get_dataloaders(args):
+    # Load the checkpoint to access the configuration
+    checkpoint = load_checkpoint(teacher_run_name, args)
+    config = checkpoint.get('config')
+    val_split_seed = config.get('val_split_seed')
+    
+    return val_split_seed
+
+def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dynamics):
     # Define transformations for image datasets
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    if args.dataset == 'cifar10':
+    if dataset_name == 'cifar10':
         train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'cifar100':
+    elif dataset_name == 'cifar100':
         train_dataset = datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'mnist':
+    elif dataset_name == 'mnist':
         train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
         
-    elif args.dataset == 'speechcommands':
+    elif dataset_name == 'speechcommands':
         train_dataset = SPEECHCOMMANDS(root='./data', subset='training')
         test_dataset = SPEECHCOMMANDS(root='./data', subset='testing')
         # TODO
         # transform to spectrograms, or keep at waveform?
         
-    # elif args.dataset == 'urbansound8k':
+    # elif dataset_name == 'urbansound8k':
     #     train_dataset = URBANSOUND8K(root='./data', subset='training')
     #     test_dataset = URBANSOUND8K(root='./data', subset='testing')
     #     # TODO
@@ -76,14 +81,23 @@ def get_dataloaders(args):
     
     # Split the training dataset into train and validation
     local_generator = torch.Generator()
-    if args.val_split_seed:
-        local_generator.manual_seed(args.val_split_seed)
+    if val_split_seed:
+        local_generator.manual_seed(val_split_seed)
     else:
-        args.val_split_seed = local_generator.initial_seed()
+        if prev_run_name_for_dynamics:
+            raise Exception("if using datamapped subset for training, val split seed for prev run must be provided.")
+        val_split_seed = local_generator.initial_seed()
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size
     train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size], generator=local_generator)
     
+    
+    return train_dataset, val_dataset, test_dataset
+    
+    
+def get_dataloaders(args):
+    train_dataset, val_dataset, test_dataset = get_train_val_test_sets(args.dataset, args.val_split_seed, args.prev_run_name_for_dynamics)
+
     if args.prev_run_name_for_dynamics:
         # get subset from dataset using previous run dynamics
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
