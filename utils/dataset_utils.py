@@ -46,7 +46,7 @@ def load_val_split_seed_from_run_name(teacher_run_name, args):
     
     return val_split_seed
 
-def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dynamics):
+def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dynamics, keep_full=False):
     # Define transformations for image datasets
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -79,6 +79,9 @@ def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dyna
     else:
         raise ValueError("Unknown dataset")
     
+    if keep_full:
+        return train_dataset, test_dataset
+    
     # Split the training dataset into train and validation
     local_generator = torch.Generator()
     if val_split_seed:
@@ -93,13 +96,14 @@ def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dyna
     
     
     return train_dataset, val_dataset, test_dataset
-    
+
     
 def get_dataloaders(args):
     train_dataset, val_dataset, test_dataset = get_train_val_test_sets(args.dataset, args.val_split_seed, args.prev_run_name_for_dynamics)
 
     if args.prev_run_name_for_dynamics:
         # get subset from dataset using previous run dynamics
+        
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
         selected_indices = get_data_subset(
             list(range(len(train_dataset))),
@@ -120,12 +124,13 @@ def get_dataloaders(args):
             selector_forgetfulness=args.selector_forgetfulness  
         )
 
-        # Create a Subset object for the selected indices
+        # Use CustomSubset to maintain attributes from original dataset object
         train_dataset = Subset(train_dataset, selected_indices)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
-    train_unshuffled_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=False) # required for datamap_callback later on
+    # Unshuffled required for datamap_callback later on
+    train_unshuffled_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=False) 
     val_loader = DataLoader(val_dataset, batch_size=args.validation_batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=args.validation_batch_size, shuffle=False)
 
