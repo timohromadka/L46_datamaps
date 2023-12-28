@@ -35,13 +35,13 @@ parser.add_argument('--pretrained', action='store_true', help='If True, use pret
 # Training Configuration
 parser.add_argument('--epochs', type=int, default=50, help='Maximum number of epochs for training.')
 parser.add_argument('--max_steps', type=int, default=1000000, help='Maximum number of training steps (batches) for training.')
-parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training.')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer.')
 parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam', 'AdamW', 'SGD'], help='Optimizer for training.')
 parser.add_argument('--train_batch_size', type=int, default=32, help='Batch size for training.')
 parser.add_argument('--validation_batch_size', type=int, default=32, help='Batch size for validation.')
 parser.add_argument('--gradient_clip_val', type=float, default=0.5, help='Gradient clipping value to prevent exploding gradients.')
 parser.add_argument('--checkpoint_dir', type=str, default='./model_checkpoints/', help='Directory to save model checkpoints.')
+parser.add_argument('--force_full_epoch_training', action='store_true', help='If True, then training will continue for the specified amount of epochs regardless.')
 
 # PyTorch Lightning Specific
 parser.add_argument('--precision', type=int, default=32, choices=[16, 32], help='Precision of training (32 or 16 for mixed precision).')
@@ -71,7 +71,7 @@ parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Ligh
 parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
 parser.add_argument('--training_dynamics_dir', type=str, default='training_dynamics')
 parser.add_argument('--prev_run_name_for_dynamics', type=str, help='The wandb run_name to use to fetch training_dynamics from previous run. Default=None if not training using subset')
-parser.add_argument('--val_split_seed', type=int, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
+parser.add_argument('--val_split_seed', type=int, required=True, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be knowledge distillation.')

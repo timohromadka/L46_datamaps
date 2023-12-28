@@ -1,3 +1,4 @@
+import logging
 import os
 import wandb
 
@@ -15,6 +16,9 @@ import sys
 sys.path.append("..")
 from callbacks.training_dynamics_callback import DataMapLightningCallback
 from models.models import get_model, load_model_from_run_name
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('utils/trainer_utils.py')
 
 def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     """
@@ -36,6 +40,7 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     # ========================
     # callbacks
     # ========================
+    logger.info('Setting up callbacks.')
     checkpoint_callback = ModelCheckpoint(
         monitor=args.metric_model_selection,
         mode=mode_metric,
@@ -56,8 +61,8 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
         )
         callbacks.append(datamap_callback)
         
-        
-    if args.patience_early_stopping and not args.train_on_full_data:
+    # if we are forcing full epoch training, then don't add early stopping
+    if args.patience_early_stopping and not args.train_on_full_data and not args.force_full_epoch_training:
         callbacks.append(EarlyStopping(
             monitor=args.metric_model_selection,
             mode=mode_metric,
@@ -71,6 +76,7 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     # Knowledge Distillation
     # ========================
     if args.distil_experiment:
+        logger.info('Setting up knowledge distillation with PyTorch Lightning.')
         teacher_model = load_model_from_run_name(args.teacher_model_run, args)
         teacher_model.eval()
 
@@ -81,6 +87,7 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     # ========================
     # Run training and testing
     # ========================
+    logger.info('Initializing Training.')
     trainer = pl.Trainer(
         max_epochs=args.epochs,
         # max_steps=args.max_steps, # let's stick with epochs
