@@ -41,16 +41,16 @@ def main():
 
 
         # ================================
-        # FETCH MODEL
-        # ================================
-        model = get_model(args)
-
-        # ================================
         # FETCH DATASET
         # ================================
         train_loader, train_unshuffled_loader, val_loader, test_loader = get_dataloaders(args)
         data_module = CustomDataModule(train_loader, val_loader, test_loader)
         
+        # ================================
+        # FETCH MODEL
+        # ================================
+        model = get_model(args)
+
         # ================================
         # UNDERGO TRAINING
         # ================================

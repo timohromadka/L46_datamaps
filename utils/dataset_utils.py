@@ -47,14 +47,17 @@ def get_dataloaders(args):
     if args.dataset == 'cifar10':
         train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+        args.image_size = 32
         
     elif args.dataset == 'cifar100':
         train_dataset = datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
+        args.image_size = 32
         
     elif args.dataset == 'mnist':
         train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
         test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+        args.image_size = 28
         
     elif args.dataset == 'speechcommands':
         train_dataset = SPEECHCOMMANDS(root='./data', subset='training')
@@ -69,7 +72,7 @@ def get_dataloaders(args):
     #     # transform to spectrograms, or keep at waveform?
     else:
         raise ValueError("Unknown dataset")
-
+    
     # Split the training dataset into train and validation
     train_size = int(0.8 * len(train_dataset))
     val_size = len(train_dataset) - train_size

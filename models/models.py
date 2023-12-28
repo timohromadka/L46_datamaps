@@ -291,17 +291,16 @@ class ViTModel(TrainingLightningModule):
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
+        image_size = args.image_size
         if args.model_size == 'small':
-            model = models.vit_b_32(pretrained=False)
+            model = models.vit_b_32(pretrained=args.pretrained, num_classes=num_classes, image_size=image_size)
         elif args.model_size == 'large':
-            model = models.vit_l_32(pretrained=False)
+            model = models.vit_l_32(pretrained=args.pretrained, num_classes=num_classes, image_size=image_size)
         elif args.model_size == 'medium':
             raise ValueError("Medium size is not supported. Choose from 'small' or 'large' for visualtransformer.")
         else:
             raise ValueError("Invalid model size specified. Choose from 'small' or 'large' for visualtransformer.")
 
-        # Modify the classifier head for the number of classes in your dataset
-        model.heads = nn.Linear(model.heads.in_features, num_classes)
 
         return model
 

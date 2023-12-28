@@ -5,7 +5,8 @@ import pandas as pd
 from pytorch_lightning.loggers import WandbLogger
 
 def create_wandb_logger(args, project_name):
-	wandb_logger = WandbLogger(
+    wandb.finish()
+    wandb_logger = WandbLogger(
 		project=project_name,
 		group=args.group,
 		job_type=args.job_type,
@@ -16,9 +17,9 @@ def create_wandb_logger(args, project_name):
 		log_model=args.wandb_log_model,
 		settings=wandb.Settings(start_method="thread")
 	)
-	wandb_logger.experiment.config.update(args)	  # add configuration file
+    wandb_logger.experiment.config.update(args)	  # add configuration file
+    return wandb_logger
 
-	return wandb_logger
 
 
 def flatten_config(config):
