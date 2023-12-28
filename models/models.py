@@ -352,6 +352,7 @@ def load_checkpoint(teacher_run_name, args):
     
     return checkpoint
         
+  
 def load_model_from_run_name(teacher_run_name, args):
     """
     Load a model from a given checkpoint path.
@@ -363,13 +364,24 @@ def load_model_from_run_name(teacher_run_name, args):
     Returns:
     - Loaded model.
     """
+    teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
+    
+    if not os.path.exists(teacher_model_path):
+        raise FileNotFoundError(f"Directory not found at {teacher_model_path}")
+
+    checkpoint_files = glob.glob(os.path.join(teacher_model_path, '*.ckpt'))
+    if not checkpoint_files:
+        raise FileNotFoundError(f"No .ckpt files found in {teacher_model_path}")
+
+    # There should only be one, if not, we only grab the first one for simplicity
+    checkpoint_path = checkpoint_files[0]
 
     # Load the checkpoint to access the configuration
-    checkpoint = load_checkpoint(teacher_run_name, args)
+    checkpoint = torch.load(checkpoint_path)
     config = checkpoint.get('config')
 
     if not config:
-        raise ValueError(f"No config found in checkpoint at {teacher_run_name}")
+        raise ValueError(f"No config found in checkpoint at {checkpoint_path}")
 
     # Determine the model class based on the configuration
     model_type = config.get('model_type')
