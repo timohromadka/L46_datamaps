@@ -225,6 +225,12 @@ class SmallResNetModel(TrainingLightningModule):
     def __init__(self, args):
         model = self._create_model(args)  
         super().__init__(model, args)
+        if args.freeze_pretrained:
+            for param in model.parameters():
+                param.requires_grad = False
+            # Unfreeze the last layer
+            for param in model.fc.parameters():
+                param.requires_grad = True
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
@@ -242,6 +248,12 @@ class MediumResNetModel(TrainingLightningModule):
     def __init__(self, args):
         model = self._create_model(args)  
         super().__init__(model, args)
+        if args.freeze_pretrained:
+            for param in model.parameters():
+                param.requires_grad = False
+            # Unfreeze the last layer
+            for param in model.fc.parameters():
+                param.requires_grad = True
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
@@ -260,6 +272,12 @@ class LargeResNetModel(TrainingLightningModule):
     def __init__(self, args):
         model = self._create_model(args)  
         super().__init__(model, args)
+        if args.freeze_pretrained:
+            for param in model.parameters():
+                param.requires_grad = False
+            # Unfreeze the last layer
+            for param in model.fc.parameters():
+                param.requires_grad = True
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
@@ -278,6 +296,12 @@ class EfficientNetModel(TrainingLightningModule):
     def __init__(self, args):
         model = self._create_model(args)  
         super().__init__(model, args)
+        if args.freeze_pretrained:
+            for param in model.parameters():
+                param.requires_grad = False
+            # Unfreeze the last classification layer
+            for param in model._fc.parameters():
+                param.requires_grad = True
 
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
