@@ -301,7 +301,35 @@ class EfficientNetModel(TrainingLightningModule):
 
         return model
 
+class ViTModel(TrainingLightningModule):
+    def __init__(self, args):
+        model = self._create_model(args)  
+        super().__init__(model, args)
 
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        
+        if args.dataset == 'cifar10':
+            image_size = 32
+        elif args.dataset == 'cifar100':
+            image_size = 32
+        elif args.dataset == 'mnist':
+            image_size = 28
+        else:
+            raise Exception(f"Dataset: <{args.dataset}> not supported for ViT")
+        
+        if args.model_size == 'small':
+            model = models.vit_b_32(pretrained=args.pretrained, num_classes=num_classes, image_size=image_size)
+        elif args.model_size == 'large':
+            model = models.vit_l_32(pretrained=args.pretrained, num_classes=num_classes, image_size=image_size)
+        elif args.model_size == 'medium':
+            raise ValueError("Medium size is not supported. Choose from 'small' or 'large' for visualtransformer.")
+        else:
+            raise ValueError("Invalid model size specified. Choose from 'small' or 'large' for visualtransformer.")
+
+
+        return model
+    
 def get_model(args):
     if args.model == "cnn":
         if args.model_size == "small":
@@ -321,7 +349,9 @@ def get_model(args):
         
     elif args.model == 'efficientnet':
         return EfficientNetModel(args)
-
+    
+    elif args.model == 'visualtransformer':
+        return ViTModel(args)
     else:
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
 
