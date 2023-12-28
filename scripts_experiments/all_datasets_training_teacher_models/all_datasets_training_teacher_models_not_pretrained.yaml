@@ -1,4 +1,4 @@
-program: /home/timoh/L46_datamaps/run_experiment.py # Path to the program to run
+program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
 project: all_datasets_training_teacher_models # Project name
 
 name: all_datasets_training_teacher_models
