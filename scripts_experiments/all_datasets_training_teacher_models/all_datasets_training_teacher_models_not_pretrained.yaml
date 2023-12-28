@@ -1,0 +1,52 @@
+program: /home/timoh/L46_datamaps/run_experiment.py # Path to the program to run
+project: all_datasets_training_teacher_models # Project name
+
+name: all_datasets_training_teacher_models
+
+# it's not possible to add booleans, thus they must be defined directly in args. 
+# https://github.com/wandb/wandb/issues/1700
+command:
+- ${env}
+- ${interpreter}
+- ${program}
+- --notes
+- "Training large teacher models with no pretraining to identify ideal hyperparameters"
+- --model_size
+- large
+- --epochs
+- 10
+- --optimizer
+- Adam
+- --val_split_seed
+- 42
+- --force_full_epoch_training
+- --track_training_dynamics
+- ${args}
+
+method: grid
+parameters:
+  dataset:
+    distribution: categorical
+    values:
+      - cifar10
+      - cifar100
+      - mnist
+
+  model:
+    distribution: categorical
+    values:
+      - resnet
+      - efficientnet
+      - visualtransformer
+
+  learning_rate:
+    values:
+      - 0.001
+      - 0.0001
+
+  # val_split_seed:
+  #   distribution: categorical
+  #   values:
+  #     - 42
+  #     - 43
+  #     - 44

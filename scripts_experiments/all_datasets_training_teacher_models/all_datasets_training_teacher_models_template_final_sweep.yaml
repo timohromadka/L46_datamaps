@@ -9,9 +9,25 @@ command:
 - ${env}
 - ${interpreter}
 - ${program}
+- --notes
+- "Training large teacher models (with training dynamic calculation) to identify ideal hyperparameters"
 - ${args}
+- --model_size
+- large
+- --model_name
+- DUMMY_STR # CHANGE HERE
+- --epochs
+- 10 
+- --optimizer
+- Adam 
+- --learning_rate
+- 0.001 # CHANGE HERE
+- --force_full_epoch_training
 - --track_training_dynamics
+- --pretrained # CHANGE HERE (remove if needed)
+- --freeze_pretrained # CHANGE HERE (remove if needed)
 
+# potentially define individual datasets if we need to change hparams across datasets
 method: grid
 parameters:
   dataset:
@@ -20,27 +36,6 @@ parameters:
       - cifar10
       - cifar100
       - mnist
-
-  model:
-    distribution: categorical
-    values:
-      - resnet
-      - efficientnet
-      - visualtransformer
-
-  model_size:
-    distribution: categorical
-    values:
-      - large
-
-  epochs:
-    value: 10
-
-  learning_rate:
-    value: 0.001
-
-  optimizer:
-    value: Adam
 
   val_split_seed:
     distribution: categorical

@@ -9,9 +9,20 @@ command:
 - ${env}
 - ${interpreter}
 - ${program}
-- ${args}
+- --notes
+- "Training large teacher models with pretraining but NO layer freezing to identify ideal hyperparameters"
+- --model_size
+- large
+- --epochs
+- 10
+- --optimizer
+- Adam
+- --val_split_seed
+- 42
 - --force_full_epoch_training
 - --track_training_dynamics
+- --pretrained
+- ${args}
 
 method: grid
 parameters:
@@ -29,26 +40,14 @@ parameters:
       - efficientnet
       - visualtransformer
 
-  model_size:
-    distribution: categorical
-    values:
-      - large
-
-  epochs:
-    value: 10
-
   learning_rate:
     values:
-      - 0.1
       - 0.001
       - 0.0001
 
-  optimizer:
-    value: Adam
-
-  val_split_seed:
-    distribution: categorical
-    values:
-      - 42
-      - 43
-      - 44
+  # val_split_seed:
+  #   distribution: categorical
+  #   values:
+  #     - 42
+  #     - 43
+  #     - 44
