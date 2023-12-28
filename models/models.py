@@ -345,6 +345,7 @@ def load_model_from_run_name(teacher_run_name, args):
     if not checkpoint_files:
         raise FileNotFoundError(f"No .ckpt files found in {teacher_model_path}")
 
+    # There should only be one, if not, we only grab the first one for simplicity
     checkpoint_path = checkpoint_files[0]
 
     # Load the checkpoint to access the configuration
