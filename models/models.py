@@ -89,7 +89,14 @@ class TrainingLightningModule(pl.LightningModule):
         
 
     def configure_optimizers(self):
-        if self.args.optimizer == 'Adam':
+        if self.args.model == 'visualtransformer' and self.args.optimizer == 'Adam':
+            optimizer = torch.optim.Adam(
+                self.model.parameters(),
+                lr=self.args.learning_rate,
+                betas=(0.9, 0.98),
+                eps=1e-9
+            )
+        elif self.args.optimizer == 'Adam':
             optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         elif self.args.optimizer == 'AdamW':
             optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
@@ -99,6 +106,7 @@ class TrainingLightningModule(pl.LightningModule):
             raise ValueError("Unsupported optimizer type")
 
         return optimizer
+
     
     def on_train_end(self):
         super().on_train_end()
