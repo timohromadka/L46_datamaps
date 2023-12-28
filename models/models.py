@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torchmetrics import Accuracy
 import torch.nn as nn
 import torchvision.models as models
+import torchvision.models as models
 
 import sys
 sys.path.append('..')
@@ -283,6 +284,28 @@ class EfficientNetModel(TrainingLightningModule):
         return model
 
 
+class ViTModel(TrainingLightningModule):
+    def __init__(self, args):
+        model = self._create_model(args)  
+        super().__init__(model, args)
+
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        if args.model_size == 'small':
+            model = models.vit_b_32(pretrained=False)
+        elif args.model_size == 'large':
+            model = models.vit_l_32(pretrained=False)
+        elif args.model_size == 'medium':
+            raise ValueError("Medium size is not supported. Choose from 'small' or 'large' for visualtransformer.")
+        else:
+            raise ValueError("Invalid model size specified. Choose from 'small' or 'large' for visualtransformer.")
+
+        # Modify the classifier head for the number of classes in your dataset
+        model.heads = nn.Linear(model.heads.in_features, num_classes)
+
+        return model
+
+
 def get_model(args):
     if args.model == "cnn":
         if args.model_size == "small":
@@ -302,6 +325,9 @@ def get_model(args):
         
     elif args.model == 'efficientnet':
         return EfficientNetModel(args)
+    
+    elif args.model == 'visualtransformer':
+        return ViTModel(args)
 
     else:
         raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")

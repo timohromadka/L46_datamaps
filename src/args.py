@@ -13,7 +13,7 @@ parser.add_argument('--dataset', type=str, required=True, choices=['cifar10', 'c
 # parser.add_argument('--small_dataset', action='store_true', help='(for debugging) True if using a small sample of data from the training set.')
 
 # Model 
-parser.add_argument('--model', type=str, required=True, choices=['cnn', 'resnet', 'efficientnet'])
+parser.add_argument('--model', type=str, required=True, choices=['cnn', 'resnet', 'efficientnet', 'visualtransformer'])
 parser.add_argument('--model_size', type=str, required=True, choices=['small', 'medium', 'large'])
 parser.add_argument('--pretrained', action='store_true', help='If True, use pretrained weights.')
 
