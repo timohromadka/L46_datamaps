@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 
@@ -14,6 +15,9 @@ from utils.constants import NUM_CHANNELS, NUM_CLASSES
 
 from efficientnet_pytorch import EfficientNet
 from torchmetrics import Precision, Recall, F1Score, Accuracy
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('models/models.py')
 
 # TODO:
 # Add new architectures?
@@ -331,6 +335,7 @@ class ViTModel(TrainingLightningModule):
         return model
     
 def get_model(args):
+    logger.info(f'Fetching model. args.model {args.model} | args.model_size: {args.model_size}')
     if args.model == "cnn":
         if args.model_size == "small":
             return SmallCNNModel(args)
@@ -366,6 +371,8 @@ def load_checkpoint(teacher_run_name, args):
     Returns:
     - model checkpoint.
     """
+    logger.info(f'Loading model checkpoint from run name: {teacher_run_name}')
+    
     teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
     
     if not os.path.exists(teacher_model_path):
@@ -394,6 +401,8 @@ def load_model_from_run_name(teacher_run_name, args):
     Returns:
     - Loaded model.
     """
+    logger.info(f'Loading, configuring, and initializing teacher model from checkpoint using teacher run name: {teacher_run_name}')
+    
     teacher_model_path = os.path.join(args.checkpoint_dir, teacher_run_name)
     
     if not os.path.exists(teacher_model_path):

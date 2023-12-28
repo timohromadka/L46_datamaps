@@ -1,15 +1,19 @@
+import glob
+import logging
+import os
+
 import torch
 from torchvision import datasets, transforms
 from torchaudio.datasets import SPEECHCOMMANDS #, URBANSOUND8K
 from torch.utils.data import DataLoader, random_split
 from pytorch_lightning import LightningDataModule
 from torch.utils.data.dataset import Subset
-import os
-import glob
 from models.models import load_checkpoint
 from utils.wandb_utils import get_training_dynamics_from_run_name
 from utils.training_dynamic_utils import get_data_subset
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('utils/dataset_utils.py')
 
 class CustomDataModule(LightningDataModule):
     def __init__(self, train_loader, val_loader, test_loader):
@@ -38,6 +42,7 @@ def load_val_split_seed_from_run_name(teacher_run_name, args):
     Returns:
     - Loaded val_split_seed, int.
     """
+    logger.info(f'Loading validation split seed from parent run name: {teacher_run_name}')
 
     # Load the checkpoint to access the configuration
     checkpoint = load_checkpoint(teacher_run_name, args)
@@ -47,6 +52,8 @@ def load_val_split_seed_from_run_name(teacher_run_name, args):
     return val_split_seed
 
 def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dynamics, keep_full=False):
+    logger.info(f'Fetching train, val, and test sets according to args. dataset_name: {dataset_name} | val_split_seed: {val_split_seed} | prev_run_name_for_dynamics: {prev_run_name_for_dynamics}')
+    
     # Define transformations for image datasets
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -101,8 +108,12 @@ def get_train_val_test_sets(dataset_name, val_split_seed, prev_run_name_for_dyna
 def get_dataloaders(args):
     train_dataset, val_dataset, test_dataset = get_train_val_test_sets(args.dataset, args.val_split_seed, args.prev_run_name_for_dynamics)
 
-    if args.prev_run_name_for_dynamics:
-        # get subset from dataset using previous run dynamics
+    # only obtain a subset if it is requested !
+    if args.prev_run_name_for_dynamics and \
+        (args.p_easytolearn or args.p_ambiguous or args.p_hardtolearn or args.p_variability or 
+         args.p_confidence or args.p_correctness or args.p_forgetfulness):
+            
+        logger.info(f'Fetching subset of data according to given training dynamic percentages.')
         
         gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
         selected_indices = get_data_subset(
@@ -124,9 +135,9 @@ def get_dataloaders(args):
             selector_forgetfulness=args.selector_forgetfulness  
         )
 
-        # Use CustomSubset to maintain attributes from original dataset object
         train_dataset = Subset(train_dataset, selected_indices)
 
+    logger.info(f'Fetching dataloaders.')
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
     # Unshuffled required for datamap_callback later on
