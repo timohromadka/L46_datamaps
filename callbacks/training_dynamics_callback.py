@@ -46,7 +46,8 @@ class DataMapLightningCallback(Callback):
         pl_module.eval()
         with torch.no_grad():
             # for batch_idx, batch in tqdm(enumerate(self.dataloader), desc='Calculating gold label probabilities in batches.', position=0):
-            for batch_idx, batch in tqdm(enumerate(self.dataloader), desc="Processing Batches to Retreive Gold Label Probabilities."):
+            # for batch_idx, batch in tqdm(enumerate(self.dataloader), desc="Processing Batches to Retreive Gold Label Probabilities."):
+            for batch_idx, batch in enumerate(self.dataloader):
                 # Predictions
                 x, y = batch
                 x = x.to(pl_module.device) # lightning will not handle this automatically
@@ -77,7 +78,8 @@ class DataMapLightningCallback(Callback):
         print(f'\nTraining has ended! Preparing and uploading training dynamics to WandB.\n')
         
         # for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc='Calculating training dynamics from gold labels probabilities.', position=0):
-        for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc="Calculating training dynamics from gold labels probabilities."):
+        # for idx, cur_gold_label_probs in tqdm(enumerate(self.gold_labels_probabilities), desc="Calculating training dynamics from gold labels probabilities."):
+        for idx, cur_gold_label_probs in enumerate(self.gold_labels_probabilities):
             self.training_dynamics[int(idx)] = {
                 'gold_label_probs': self.convert_numpy(cur_gold_label_probs),
                 'confidence': self.convert_numpy(self.confidence(cur_gold_label_probs)),

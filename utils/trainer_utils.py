@@ -5,6 +5,7 @@ import wandb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchinfo import summary
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
@@ -34,8 +35,13 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     pl.seed_everything(args.seed, workers=True)
     
     model = get_model(args)
-
-    mode_metric = 'max' if args.metric_model_selection == 'balanced_accuracy' else 'min'
+    mode_metric = 'max' if 'accuracy' in args.metric_model_selection else 'min'
+    # ========================
+    # log useful model info
+    # no inbuilt flop counter: https://github.com/Lightning-AI/pytorch-lightning/issues/12567
+    # ========================
+    param_count, model_size_mb = get_model_info(model)
+    wandb.log({'parameter_count': param_count, 'model_size_mb': model_size_mb})
     
     # ========================
     # callbacks
@@ -105,8 +111,18 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
         deterministic=args.deterministic,
     )
  
-    trainer.fit(model, data_module)
+    if not args.test_only:
+        trainer.fit(model, data_module)
     
     trainer.test(model, dataloaders=data_module.test_dataloader())
 
     return trainer, checkpoint_callback, datamap_callback
+
+
+def get_model_info(model):
+    model_info = summary(model, verbose=0)
+    logger.info(f'Model information:\n {model_info}\n')
+    param_count = sum(p.numel() for p in model.parameters())
+    model_size = sum(p.numel() for p in model.parameters() if p.requires_grad) * torch.tensor(0).float().element_size() # in bytes
+    model_size_mb = model_size / (1024 * 1024) # Convert to megabytes
+    return param_count, model_size_mb
