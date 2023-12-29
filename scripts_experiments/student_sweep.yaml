@@ -17,13 +17,15 @@ command:
   # - 10
   - --optimizer
   - Adam
-  - --force_full_epoch_training
+  - --learning_rate
+  - 0.001
   - --dataset
   - cifar10
   - --distil_experiment
   - --teacher_model_run
   - "TODO"
   - ${args}
+  - ${subset_argument}
 
 method: grid
 parameters:
@@ -41,3 +43,18 @@ parameters:
       - 42
       # - 43
       # - 44
+
+  subset_argument:
+    distribution: categorical
+    values:
+      - "--p_hardtolearn 0.33"
+      - "--p_ambiguous 0.33"
+      - "--p_easytolearn 0.33"
+      - "--p_confidence 0.33 --selector_confidence top"
+      - "--p_confidence 0.33 --selector_confidence bottom"
+      - "--p_variability 0.33 --selector_variability top"
+      - "--p_variability 0.33 --selector_variability bottom"
+      - "--p_correctness 0.33 --selector_correctness top"
+      - "--p_correctness 0.33 --selector_correctness bottom"
+      - "--p_forgetfulness 0.33 --selector_forgetfulness top"
+      - "--p_forgetfulness 0.33 --selector_forgetfulness bottom"
