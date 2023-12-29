@@ -127,109 +127,53 @@ class TrainingLightningModule(pl.LightningModule):
             checkpoint['config'] = model_config
             torch.save(checkpoint, checkpoint_path)
 
+
     
-
-# TODO
-# fix CNN model initialization with super class
-class SmallCNNModel(TrainingLightningModule):
+class VGGModel(TrainingLightningModule):
     def __init__(self, args):
-        self._create_architecture(args)
-        super().__init__(self, args)
+        model = self._create_model(args)
+        super().__init__(model, args)
 
-    def _create_architecture(self, args):
+    def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         num_channels = NUM_CHANNELS[args.dataset]
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(in_channels=num_channels, out_channels=32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
-        )
-        self.fc_layers = nn.Sequential(
-            nn.Linear(64 * 8 * 8, 256),
-            nn.ReLU(),
-            nn.Linear(256, num_classes)
-        )
 
-    def forward(self, x):
-        x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)  # Flatten the tensor
-        x = self.fc_layers(x)
-        return x
+        if args.pretrained_from_github:
+            if args.model_size == 'small':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg11_bn", pretrained=True)
+            elif args.model_size == 'medium':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg13_bn", pretrained=True)
+            elif args.model_size == 'large':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg16_bn", pretrained=True)
+            else:
+                raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
+            return model
 
+        if args.model_size == 'small':
+            model = models.vgg11(pretrained=args.pretrained)
+        elif args.model_size == 'medium':
+            model = models.vgg13(pretrained=args.pretrained)
+        elif args.model_size == 'large':
+            model = models.vgg16(pretrained=args.pretrained)
+        else:
+            raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
 
-class MediumCNNModel(TrainingLightningModule):
-    def __init__(self, args):
-        self._create_architecture(args)
-        super().__init__(self, args) 
+        # Modify the first convolutional layer if the number of input channels is not 3
+        if num_channels != 3:
+            first_conv_layer = model.features[0]
+            model.features[0] = nn.Conv2d(num_channels, first_conv_layer.out_channels,
+                                               kernel_size=first_conv_layer.kernel_size,
+                                               stride=first_conv_layer.stride,
+                                               padding=first_conv_layer.padding)
 
-    def _create_architecture(self, args):
-        num_classes = NUM_CLASSES[args.dataset]
-        num_channels = NUM_CHANNELS[args.dataset]
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(num_channels, 64, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(64, 128, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2)
-        )
-        self.fc_layers = nn.Sequential(
-            nn.Linear(128 * 8 * 8, 512),
-            nn.ReLU(),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc_layers(x)
-        return x
-
-
-
-class LargeCNNModel(TrainingLightningModule):
-    def __init__(self, args):
-        self._create_architecture(args)
-        super().__init__(self, args) 
+        # Replace the classifier with a new one matching the number of classes
+        num_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_features, num_classes)
         
-    def _create_architecture(self, args):
-        num_classes = NUM_CLASSES[args.dataset]
-        num_channels = NUM_CHANNELS[args.dataset]
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(num_channels, 128, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(128, 256, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(256, 256, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(256, 512, 3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(512, 512, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2)
-        )
-        self.fc_layers = nn.Sequential(
-            nn.Linear(512 * 4 * 4, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, num_classes)
-        )
+        return model
 
     def forward(self, x):
-        x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc_layers(x)
-        return x
+        return self.model(x)
 
 
 class ResNetModel(TrainingLightningModule):
@@ -248,20 +192,24 @@ class ResNetModel(TrainingLightningModule):
                 model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet32", pretrained=True)
             elif args.model_size == 'large':
                 model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet44", pretrained=True)
+            else:
+                raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
             return model
+
+        if args.model_size == 'small':
+            model = models.resnet18(pretrained=args.pretrained)
+        elif args.model_size == 'medium':
+            model = models.resnet34(pretrained=args.pretrained)
+        elif args.model_size == 'large':
+            model = models.resnet50(pretrained=args.pretrained)
         else:
-            if args.model_size == 'small':
-                model = models.resnet18(pretrained=args.pretrained)
-            elif args.model_size == 'medium':
-                model = models.resnet34(pretrained=args.pretrained)
-            elif args.model_size == 'large':
-                model = models.resnet50(pretrained=args.pretrained)
-        
-            if num_channels != 3:
-                model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-                
-            model.fc = nn.Linear(model.fc.in_features, num_classes)
-            return model
+            raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
+    
+        if num_channels != 3:
+            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+            
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
 
     def forward(self, x):
         return self.model(x)
@@ -385,19 +333,15 @@ class ViTModel(TrainingLightningModule):
     
 def get_model(args):
     logger.info(f'Fetching model. args.model {args.model} | args.model_size: {args.model_size}')
-    if args.model == "cnn":
-        if args.model_size == "small":
-            return SmallCNNModel(args)
-        elif args.model_size == "medium":
-            return MediumCNNModel(args)
-        elif args.model_size == "large":
-            return LargeCNNModel(args)
-        
-    elif args.model == "resnet":
+
+    if args.model == "resnet":
         return ResNetModel(args)
         
     elif args.model == 'efficientnet':
         return EfficientNetModel(args)
+    
+    elif args.model == 'vgg':
+        return VGGModel(args)
     
     elif args.model == 'visualtransformer':
         return ViTModel(args)
@@ -478,14 +422,12 @@ def load_model_from_run_name(teacher_run_name, args):
     teacher_args.pretrained_from_github = pretrained_from_github
     teacher_args.pretrained = pretrained
 
-    if model_type == "cnn":
-        model = SmallCNNModel if model_size == "small" else \
-                      MediumCNNModel if model_size == "medium" else \
-                      LargeCNNModel
-    elif model_type == "resnet":
+    if model_type == "resnet":
         model = ResNetModel
     elif model_type == 'efficientnet':
         model = EfficientNetModel
+    elif args.model == 'vgg':
+        return VGGModel
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
