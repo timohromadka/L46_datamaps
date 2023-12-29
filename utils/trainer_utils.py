@@ -105,7 +105,8 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
         deterministic=args.deterministic,
     )
  
-    trainer.fit(model, data_module)
+    if not args.test_only:
+        trainer.fit(model, data_module)
     
     trainer.test(model, dataloaders=data_module.test_dataloader())
 
