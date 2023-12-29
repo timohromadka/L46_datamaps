@@ -128,6 +128,48 @@ class TrainingLightningModule(pl.LightningModule):
             torch.save(checkpoint, checkpoint_path)
 
 
+class MobileNetModel(TrainingLightningModule):
+    def __init__(self, args):
+        model = self._create_model(args)
+        super().__init__(model, args)
+
+    def _create_model(self, args):
+        num_classes = NUM_CLASSES[args.dataset]
+        num_channels = NUM_CHANNELS[args.dataset]
+
+        if args.pretrained_from_github:
+            raise NotImplementedError("Pretrained MobileNet models from GitHub are not yet implemented.")
+
+        # Choose MobileNet model size
+        if args.model_size == 'small':
+            model = models.mobilenet_v2(pretrained=args.pretrained, width_mult=0.35)  # Smaller width multiplier for a smaller model
+        elif args.model_size == 'medium':
+            model = models.mobilenet_v2(pretrained=args.pretrained, width_mult=0.75)  # Medium width multiplier
+        elif args.model_size == 'large':
+            model = models.mobilenet_v2(pretrained=args.pretrained, width_mult=1.0)   # Default width multiplier for a larger model
+        else:
+            raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
+
+        # Modify the first convolutional layer if the number of input channels is not 3
+        if num_channels != 3:
+            first_conv_layer = model.features[0][0]
+            model.features[0][0] = nn.Conv2d(num_channels, first_conv_layer.out_channels,
+                                             kernel_size=first_conv_layer.kernel_size,
+                                             stride=first_conv_layer.stride,
+                                             padding=first_conv_layer.padding)
+
+        # Replace the classifier with a new one matching the number of classes
+        num_features = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            nn.Dropout(0.2),
+            nn.Linear(num_features, num_classes)
+        )
+
+        return model
+
+    def forward(self, x):
+        return self.model(x)
+
     
 class VGGModel(TrainingLightningModule):
     def __init__(self, args):
@@ -139,15 +181,19 @@ class VGGModel(TrainingLightningModule):
         num_channels = NUM_CHANNELS[args.dataset]
 
         if args.pretrained_from_github:
-            if args.model_size == 'small':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg11_bn", pretrained=True)
-            elif args.model_size == 'medium':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg13_bn", pretrained=True)
-            elif args.model_size == 'large':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg16_bn", pretrained=True)
+            if args.dataset in ['cifar10', 'cifar100']:
+                if args.model_size == 'small':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg11_bn", pretrained=True)
+                elif args.model_size == 'medium':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg13_bn", pretrained=True)
+                elif args.model_size == 'large':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_vgg16_bn", pretrained=True)
+                else:
+                    raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
+                return model
             else:
-                raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
-            return model
+                raise ValueError(f"Invalid dataset: {args.dataset}. No pretrained models found for this dataset.")
+
 
         if args.model_size == 'small':
             model = models.vgg11(pretrained=args.pretrained)
@@ -186,15 +232,19 @@ class ResNetModel(TrainingLightningModule):
         num_channels = NUM_CHANNELS[args.dataset]
         
         if args.pretrained_from_github:
-            if args.model_size == 'small':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet20", pretrained=True)
-            elif args.model_size == 'medium':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet32", pretrained=True)
-            elif args.model_size == 'large':
-                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet44", pretrained=True)
+            if args.dataset in ['cifar10', 'cifar100']:
+                if args.model_size == 'small':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet20", pretrained=True)
+                elif args.model_size == 'medium':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet32", pretrained=True)
+                elif args.model_size == 'large':
+                    model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet44", pretrained=True)
+                else:
+                    raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
+                return model
             else:
-                raise ValueError("Invalid model size. Expected 'small', 'medium', or 'large'.")
-            return model
+                raise ValueError(f"Invalid dataset: {args.dataset}. No pretrained models found for this dataset.")
+
 
         if args.model_size == 'small':
             model = models.resnet18(pretrained=args.pretrained)
@@ -213,58 +263,6 @@ class ResNetModel(TrainingLightningModule):
 
     def forward(self, x):
         return self.model(x)
-
-# class SmallResNetModel(TrainingLightningModule):
-#     def __init__(self, args):
-#         model = self._create_model(args)  
-#         super().__init__(model, args)
-
-#     def _create_model(self, args):
-#         num_classes = NUM_CLASSES[args.dataset]
-#         num_channels = NUM_CHANNELS[args.dataset]
-#         model = models.resnet18(pretrained=args.pretrained)
-#         if num_channels != 3:
-#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-#         model.fc = nn.Linear(model.fc.in_features, num_classes)
-#         return model
-
-#     def forward(self, x):
-#         return self.model(x)
-
-# class MediumResNetModel(TrainingLightningModule):
-#     def __init__(self, args):
-#         model = self._create_model(args)  
-#         super().__init__(model, args)
-
-#     def _create_model(self, args):
-#         num_classes = NUM_CLASSES[args.dataset]
-#         num_channels = NUM_CHANNELS[args.dataset]
-#         model = models.resnet34(pretrained=args.pretrained)
-#         if num_channels != 3:
-#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-#         model.fc = nn.Linear(model.fc.in_features, num_classes)
-#         return model
-    
-#     def forward(self, x):
-#         return self.model(x)
-
-    
-# class LargeResNetModel(TrainingLightningModule):
-#     def __init__(self, args):
-#         model = self._create_model(args)  
-#         super().__init__(model, args)
-
-#     def _create_model(self, args):
-#         num_classes = NUM_CLASSES[args.dataset]
-#         num_channels = NUM_CHANNELS[args.dataset]
-#         model = models.resnet50(pretrained=args.pretrained)
-#         if num_channels != 3:
-#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-#         model.fc = nn.Linear(model.fc.in_features, num_classes)
-#         return model
-
-#     def forward(self, x):
-#         return self.model(x)
     
 
 class EfficientNetModel(TrainingLightningModule):
@@ -277,7 +275,7 @@ class EfficientNetModel(TrainingLightningModule):
         num_channels = NUM_CHANNELS[args.dataset]
         
         if args.pretrained_from_github:
-            raise ValueError("Loading pretrained models from GitHub with an efficientnet is not allowed.")
+            raise ValueError("Loading pretrained models from GitHub with an efficientnet is not allowed as no models are available.")
 
         if args.model_size == 'small':
             efficientnet_model_size = '0'
@@ -287,6 +285,7 @@ class EfficientNetModel(TrainingLightningModule):
             efficientnet_model_size = '4'
         else:
             raise ValueError("Invalid model size specified. Choose from 'small', 'medium', or 'large'.")
+        
         efficientnet_size = f'efficientnet-b{efficientnet_model_size}'
 
         model = EfficientNet.from_pretrained(efficientnet_size, num_classes=num_classes)
@@ -340,13 +339,16 @@ def get_model(args):
     elif args.model == 'efficientnet':
         return EfficientNetModel(args)
     
+    elif args.model == 'mobilenet':
+        return MobileNetModel(args)
+    
     elif args.model == 'vgg':
         return VGGModel(args)
     
     elif args.model == 'visualtransformer':
         return ViTModel(args)
     else:
-        raise ValueError(f"Invalid model type: {args.model}. Expected 'cnn' or 'resnet'.")
+        raise ValueError(f"Invalid model type: {args.model}. Expected 'resnet', 'efficientnet', 'visualtransformer', 'vgg', 'mobilenet'.")
 
 def load_checkpoint(teacher_run_name, args):
     """
@@ -426,8 +428,10 @@ def load_model_from_run_name(teacher_run_name, args):
         model = ResNetModel
     elif model_type == 'efficientnet':
         model = EfficientNetModel
+    elif model_type == 'mobilenet':
+        model = MobileNetModel
     elif args.model == 'vgg':
-        return VGGModel
+        model = VGGModel
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
