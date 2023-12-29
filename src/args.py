@@ -29,8 +29,8 @@ parser.add_argument('--dataset', type=str, required=True, choices=['cifar10', 'c
 # Model 
 parser.add_argument('--model', type=str, required=True, choices=['cnn', 'resnet', 'efficientnet', 'visualtransformer'])
 parser.add_argument('--model_size', type=str, required=True, choices=['small', 'medium', 'large'])
-parser.add_argument('--pretrained', action='store_true', help='If True, use pretrained weights.')
-
+parser.add_argument('--pretrained', action='store_true', help='If True, use pretrained weights (usually pretrained on ImageNet).')
+parser.add_argument('--pretrained_from_github', action='store_true', help='If True, will use an already high-performing trained model for the specific dataset as defined in --dataset.')
 
 # Training Configuration
 parser.add_argument('--epochs', type=int, default=50, help='Maximum number of epochs for training.')
@@ -42,7 +42,6 @@ parser.add_argument('--validation_batch_size', type=int, default=32, help='Batch
 parser.add_argument('--gradient_clip_val', type=float, default=0.5, help='Gradient clipping value to prevent exploding gradients.')
 parser.add_argument('--checkpoint_dir', type=str, default='./model_checkpoints/', help='Directory to save model checkpoints.')
 parser.add_argument('--force_full_epoch_training', action='store_true', help='If True, then training will continue for the specified amount of epochs regardless.')
-
 # PyTorch Lightning Specific
 parser.add_argument('--precision', type=int, default=32, choices=[16, 32], help='Precision of training (32 or 16 for mixed precision).')
 parser.add_argument('--accelerator', type=str, default='gpu', help='Type of accelerator to use ("gpu" or "cpu").')
@@ -55,6 +54,8 @@ parser.add_argument('--data_augmentation', type=bool, default=True, help='Whethe
 parser.add_argument('--logging_interval', type=int, default=100, help='Interval for logging training metrics.')
 # parser.add_argument('--checkpoint_freq', type=int, default=3, help='Frequency of saving top-k model checkpoints.')
 parser.add_argument('--save_top_k', type=int, default=1, help='Select k-best model checkpoints to save for each run.')
+parser.add_argument('--test_only', action='store_true', help='If True, will only run testing, no training or validation will be performed.')
+
 
 # Validation
 parser.add_argument('--metric_model_selection', type=str, default='val_loss',
