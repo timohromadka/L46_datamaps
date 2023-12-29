@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import glob
@@ -119,7 +120,9 @@ class TrainingLightningModule(pl.LightningModule):
             model_config = {
                 'model_type': self.args.model,
                 'model_size': self.args.model_size,
-                'val_split_seed': self.args.val_split_seed
+                'val_split_seed': self.args.val_split_seed,
+                'pretrained_from_github': self.args.pretrained_from_github,
+                'pretrained': self.args.pretrained
             }
             checkpoint['config'] = model_config
             torch.save(checkpoint, checkpoint_path)
@@ -229,7 +232,7 @@ class LargeCNNModel(TrainingLightningModule):
         return x
 
 
-class SmallResNetModel(TrainingLightningModule):
+class ResNetModel(TrainingLightningModule):
     def __init__(self, args):
         model = self._create_model(args)  
         super().__init__(model, args)
@@ -237,49 +240,83 @@ class SmallResNetModel(TrainingLightningModule):
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         num_channels = NUM_CHANNELS[args.dataset]
-        model = models.resnet18(pretrained=args.pretrained)
-        if num_channels != 3:
-            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
-        return model
+        
+        if args.pretrained_from_github:
+            if args.model_size == 'small':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet20", pretrained=True)
+            elif args.model_size == 'medium':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet32", pretrained=True)
+            elif args.model_size == 'large':
+                model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"{args.dataset}_resnet44", pretrained=True)
+            return model
+        else:
+            if args.model_size == 'small':
+                model = models.resnet18(pretrained=args.pretrained)
+            elif args.model_size == 'medium':
+                model = models.resnet34(pretrained=args.pretrained)
+            elif args.model_size == 'large':
+                model = models.resnet50(pretrained=args.pretrained)
+        
+            if num_channels != 3:
+                model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+                
+            model.fc = nn.Linear(model.fc.in_features, num_classes)
+            return model
 
     def forward(self, x):
         return self.model(x)
 
-class MediumResNetModel(TrainingLightningModule):
-    def __init__(self, args):
-        model = self._create_model(args)  
-        super().__init__(model, args)
+# class SmallResNetModel(TrainingLightningModule):
+#     def __init__(self, args):
+#         model = self._create_model(args)  
+#         super().__init__(model, args)
 
-    def _create_model(self, args):
-        num_classes = NUM_CLASSES[args.dataset]
-        num_channels = NUM_CHANNELS[args.dataset]
-        model = models.resnet34(pretrained=args.pretrained)
-        if num_channels != 3:
-            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
-        return model
+#     def _create_model(self, args):
+#         num_classes = NUM_CLASSES[args.dataset]
+#         num_channels = NUM_CHANNELS[args.dataset]
+#         model = models.resnet18(pretrained=args.pretrained)
+#         if num_channels != 3:
+#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#         model.fc = nn.Linear(model.fc.in_features, num_classes)
+#         return model
+
+#     def forward(self, x):
+#         return self.model(x)
+
+# class MediumResNetModel(TrainingLightningModule):
+#     def __init__(self, args):
+#         model = self._create_model(args)  
+#         super().__init__(model, args)
+
+#     def _create_model(self, args):
+#         num_classes = NUM_CLASSES[args.dataset]
+#         num_channels = NUM_CHANNELS[args.dataset]
+#         model = models.resnet34(pretrained=args.pretrained)
+#         if num_channels != 3:
+#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#         model.fc = nn.Linear(model.fc.in_features, num_classes)
+#         return model
     
-    def forward(self, x):
-        return self.model(x)
+#     def forward(self, x):
+#         return self.model(x)
 
     
-class LargeResNetModel(TrainingLightningModule):
-    def __init__(self, args):
-        model = self._create_model(args)  
-        super().__init__(model, args)
+# class LargeResNetModel(TrainingLightningModule):
+#     def __init__(self, args):
+#         model = self._create_model(args)  
+#         super().__init__(model, args)
 
-    def _create_model(self, args):
-        num_classes = NUM_CLASSES[args.dataset]
-        num_channels = NUM_CHANNELS[args.dataset]
-        model = models.resnet50(pretrained=args.pretrained)
-        if num_channels != 3:
-            model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
-        return model
+#     def _create_model(self, args):
+#         num_classes = NUM_CLASSES[args.dataset]
+#         num_channels = NUM_CHANNELS[args.dataset]
+#         model = models.resnet50(pretrained=args.pretrained)
+#         if num_channels != 3:
+#             model.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#         model.fc = nn.Linear(model.fc.in_features, num_classes)
+#         return model
 
-    def forward(self, x):
-        return self.model(x)
+#     def forward(self, x):
+#         return self.model(x)
     
 
 class EfficientNetModel(TrainingLightningModule):
@@ -290,6 +327,10 @@ class EfficientNetModel(TrainingLightningModule):
     def _create_model(self, args):
         num_classes = NUM_CLASSES[args.dataset]
         num_channels = NUM_CHANNELS[args.dataset]
+        
+        if args.pretrained_from_github:
+            raise ValueError("Loading pretrained models from GitHub with an efficientnet is not allowed.")
+
         if args.model_size == 'small':
             efficientnet_model_size = '0'
         elif args.model_size == 'medium':
@@ -306,10 +347,10 @@ class EfficientNetModel(TrainingLightningModule):
         if num_channels != 3:
             original_conv = model._conv_stem
             model._conv_stem = nn.Conv2d(num_channels, original_conv.out_channels, 
-                                         kernel_size=original_conv.kernel_size, 
-                                         stride=original_conv.stride, 
-                                         padding=original_conv.padding, 
-                                         bias=False)
+                                        kernel_size=original_conv.kernel_size, 
+                                        stride=original_conv.stride, 
+                                        padding=original_conv.padding, 
+                                        bias=False)
 
         return model
 
@@ -353,12 +394,7 @@ def get_model(args):
             return LargeCNNModel(args)
         
     elif args.model == "resnet":
-        if args.model_size == "small":
-            return SmallResNetModel(args)
-        elif args.model_size == "medium":
-            return MediumResNetModel(args)
-        elif args.model_size == "large":
-            return LargeResNetModel(args)
+        return ResNetModel(args)
         
     elif args.model == 'efficientnet':
         return EfficientNetModel(args)
@@ -433,20 +469,26 @@ def load_model_from_run_name(teacher_run_name, args):
     # Determine the model class based on the configuration
     model_type = config.get('model_type')
     model_size = config.get('model_size')
+    pretrained_from_github = config.get('pretrained_from_github')
+    pretrained = config.get('pretrained')
+    
+    # Create a new copy of args for the teacher model
+    teacher_args = copy.deepcopy(args)
+    teacher_args.model_size = model_size
+    teacher_args.pretrained_from_github = pretrained_from_github
+    teacher_args.pretrained = pretrained
 
     if model_type == "cnn":
-        model_class = SmallCNNModel if model_size == "small" else \
+        model = SmallCNNModel if model_size == "small" else \
                       MediumCNNModel if model_size == "medium" else \
                       LargeCNNModel
     elif model_type == "resnet":
-        model_class = SmallResNetModel if model_size == "small" else \
-                      MediumResNetModel if model_size == "medium" else \
-                      LargeResNetModel
+        model = ResNetModel
     elif model_type == 'efficientnet':
-        model_class = EfficientNetModel
+        model = EfficientNetModel
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
-    model = model_class.load_from_checkpoint(checkpoint_path, args=args)
+    model = model.load_from_checkpoint(checkpoint_path, args=teacher_args)
 
     return model
