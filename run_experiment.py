@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 
 import pytorch_lightning as pl
 
-from src.args import parser
+from src.args import parser, apply_subset_arguments
 from utils.dataset_utils import get_dataloaders, CustomDataModule, load_val_split_seed_from_run_name
 from utils.trainer_utils import train_model
 from utils.wandb_utils import create_wandb_logger
@@ -30,6 +30,7 @@ def main():
         # SET UP ARGS
         # ================================
         args = parser.parse_args()
+        apply_subset_arguments(args.subset_argument, args)
         # ================================
         # CONFIGURE WANDB
         # ================================

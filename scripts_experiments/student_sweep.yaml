@@ -1,7 +1,7 @@
 program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
 project: all_datasets_training_teacher_models # Project name
 
-name: training_student_models
+name: TESTDEBUG_cifar10_knowledge_distillation_subset_training
 
 
 command:
@@ -15,17 +15,16 @@ command:
   - --epochs
   - 1
   # - 10
-  - --optimizer
-  - Adam
-  - --learning_rate
-  - 0.001
   - --dataset
   - cifar10
   - --distil_experiment
   - --teacher_model_run
-  - "TODO"
+  - run_20231229_095038
+  - --prev_run_name_for_dynamics
+  - run_20231229_095038
+  - --tags
+  - bad
   - ${args}
-  - ${subset_argument}
 
 method: grid
 parameters:
@@ -47,6 +46,7 @@ parameters:
   subset_argument:
     distribution: categorical
     values:
+      - ""
       - "--p_hardtolearn 0.33"
       - "--p_ambiguous 0.33"
       - "--p_easytolearn 0.33"

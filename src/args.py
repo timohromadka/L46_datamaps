@@ -94,6 +94,7 @@ parser.add_argument('--selector_variability', type=str, choices=['top', 'bottom'
 parser.add_argument('--selector_confidence', type=str, choices=['top', 'bottom'], default='top')
 parser.add_argument('--selector_correctness', type=str, choices=['top', 'bottom'], default='top')
 parser.add_argument('--selector_forgetfulness', type=str, choices=['top', 'bottom'], default='top')
+parser.add_argument('--subset_argument', type=str, help='Arguments related to data subsets.')
 
 
 # Weights & Biases (wandb) Integration
@@ -110,4 +111,30 @@ parser.set_defaults(wandb_log_model=False)
 parser.add_argument('--disable_wandb', action='store_true', dest='disable_wandb', help='True if you dont want to create wandb logs.')
 parser.set_defaults(disable_wandb=False)
 
-args = parser.parse_args()
+def apply_subset_arguments(subset_args_str, args):
+    # Trim the string to remove any leading/trailing whitespace
+    subset_args_str = subset_args_str.strip()
+
+    # Proceed only if the string is not empty
+    if subset_args_str:
+        # Split the subset argument string into individual arguments
+        subset_args = subset_args_str.split()
+        
+        # Iterate over the subset arguments and update the args Namespace
+        i = 0
+        while i < len(subset_args):
+            arg = subset_args[i]
+            # Ensure that it starts with '--'
+            if arg.startswith("--"):
+                key = arg[2:]  # Remove '--' prefix to match the args keys
+                value = subset_args[i + 1]
+                # Update the args Namespace if the attribute exists
+                if hasattr(args, key):
+                    # Convert value to the right type based on the existing attribute
+                    attr_type = type(getattr(args, key))
+                    setattr(args, key, attr_type(value))
+                i += 2  # Move to the next argument
+            else:
+                raise ValueError(f"Expected an argument starting with '--', found: {arg}")
+
+
