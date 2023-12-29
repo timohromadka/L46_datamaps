@@ -1,0 +1,43 @@
+program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
+project: all_datasets_training_teacher_models # Project name
+
+name: training_student_models
+
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - --notes
+  - "Training students: cifar-10 dataset, 3 students, 3 seeds, 13 subset variations"
+  - --model_size
+  - small
+  - --epochs
+  - 1
+  # - 10
+  - --optimizer
+  - Adam
+  - --force_full_epoch_training
+  - --dataset
+  - cifar10
+  - --distil_experiment
+  - --teacher_model_run
+  - "TODO"
+  - ${args}
+
+method: grid
+parameters:
+
+  model:
+    distribution: categorical
+    values:
+      - resnet
+      - efficientnet
+      - mobilenet
+
+  val_split_seed:
+    distribution: categorical
+    values:
+      - 42
+      # - 43
+      # - 44
