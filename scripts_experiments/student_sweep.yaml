@@ -1,7 +1,7 @@
 program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
-project: all_datasets_training_teacher_models # Project name
+project: cifar10_knowledge_distillation_subset_training # Project name
 
-name: TESTDEBUG_cifar10_knowledge_distillation_subset_training
+name: cifar10_knowledge_distillation_subset_training
 
 
 command:
@@ -13,17 +13,17 @@ command:
   - --model_size
   - small
   - --epochs
-  - 1
-  # - 10
+  - 10
   - --dataset
   - cifar10
   - --distil_experiment
+  - --patience_early_stopping
   - --teacher_model_run
   - run_20231229_095038
   - --prev_run_name_for_dynamics
   - run_20231229_095038
   - --tags
-  - bad
+  - tag2
   - ${args}
 
 method: grid
@@ -40,8 +40,8 @@ parameters:
     distribution: categorical
     values:
       - 42
-      # - 43
-      # - 44
+      - 43
+      - 44
 
   subset_argument:
     distribution: categorical

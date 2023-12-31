@@ -116,8 +116,6 @@ def train_model(args, data_module, train_unshuffled_loader, wandb_logger=None):
     
     trainer.test(model, dataloaders=data_module.test_dataloader())
 
-    return trainer, checkpoint_callback, datamap_callback
-
 
 def get_model_info(model):
     model_info = summary(model, verbose=0)

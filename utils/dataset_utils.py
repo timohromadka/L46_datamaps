@@ -115,7 +115,7 @@ def get_dataloaders(args):
             
         logger.info(f'Fetching subset of data according to given training dynamic percentages.')
         
-        gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name(args.wandb_project_name, 'l46_datamaps', args.prev_run_name_for_dynamics)
+        gold_label_probabilities, confidence, variability, correctness, forgetfulness = get_training_dynamics_from_run_name('all_datasets_training_teacher_models', 'l46_datamaps', args.prev_run_name_for_dynamics)
         selected_indices = get_data_subset(
             list(range(len(train_dataset))),
             variability,
@@ -132,7 +132,8 @@ def get_dataloaders(args):
             p_correctness=args.p_correctness,
             selector_correctness=args.selector_correctness,  
             p_forgetfulness=args.p_forgetfulness,
-            selector_forgetfulness=args.selector_forgetfulness  
+            selector_forgetfulness=args.selector_forgetfulness,
+            p_random=args.p_random
         )
 
         train_dataset = Subset(train_dataset, selected_indices)

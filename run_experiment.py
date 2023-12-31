@@ -54,7 +54,7 @@ def main():
         # ================================
         # UNDERGO TRAINING
         # ================================
-        trainer, checkpoint_callback, datamap_callback = train_model(
+        train_model(
             args, data_module, train_unshuffled_loader, wandb_logger
         )
         
