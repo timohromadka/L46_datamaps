@@ -1,0 +1,56 @@
+program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
+project: mnist_cifar100_knowledge_distillation_subset_training # Project name
+
+name: mnist_cifar100_knowledge_distillation_subset_training
+
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - --notes
+  - "Training students: cifar-100 and mnist datasets, 7ea subset grid search"
+  - --model_size
+  - small
+  - --epochs
+  - 10
+  - --distil_experiment
+  - --dataset 
+  - pass_via_subset_argument
+  - --tags
+  - tag4
+  - ${args}
+
+method: grid
+parameters:
+  model:
+    distribution: categorical
+    values:
+      - resnet
+      - efficientnet
+      - mobilenet
+
+  val_split_seed:
+    distribution: categorical
+    values:
+      - 42
+      - 43
+      - 44
+
+  subset_argument:
+    distribution: categorical
+    values:
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.2134 --p_ambiguous 0.2134 --p_easytolearn 0.11"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.0999 --p_ambiguous 0.1899 --p_easytolearn 0.14"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.19 --p_ambiguous 0.1 --p_easytolearn 0.14"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.27188 --p_ambiguous 0.27188 --p_easytolearn 0.05"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.0 --p_ambiguous 0.165 --p_easytolearn 0.165"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.165 --p_ambiguous 0.0 --p_easytolearn 0.165"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_hardtolearn 0.32 --p_ambiguous 0.32 --p_easytolearn 0.0"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.12845 --p_ambiguous 0.12845 --p_easytolearn 0.11"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.0523 --p_ambiguous 0.1423 --p_easytolearn 0.14"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.151 --p_ambiguous 0.061 --p_easytolearn 0.14"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.185 --p_ambiguous 0.185 --p_easytolearn 0.05"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.0 --p_ambiguous 0.165 --p_easytolearn 0.165" 
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.165 --p_ambiguous 0.0 --p_easytolearn 0.165" 
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_hardtolearn 0.2405 --p_ambiguous 0.2405 --p_easytolearn 0.0"

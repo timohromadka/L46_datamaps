@@ -1,7 +1,7 @@
 program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
 project: cifar10_knowledge_distillation_subset_training # Project name
 
-name: cifar10_knowledge_distillation_subset_training
+name: vary_random_cifar10_knowledge_distillation_subset_training
 
 
 command:
@@ -9,7 +9,7 @@ command:
   - ${interpreter}
   - ${program}
   - --notes
-  - "Training students: cifar-10 dataset, 3 students, 3 seeds, 13 subset variations"
+  - "Training students: cifar-10 dataset, varying size of 6 random subsets"
   - --model_size
   - small
   - --epochs
@@ -17,13 +17,12 @@ command:
   - --dataset
   - cifar10
   - --distil_experiment
-  - --patience_early_stopping
   - --teacher_model_run
   - run_20231229_095038
   - --prev_run_name_for_dynamics
   - run_20231229_095038
   - --tags
-  - tag2
+  - tag3
   - ${args}
 
 method: grid
@@ -46,15 +45,9 @@ parameters:
   subset_argument:
     distribution: categorical
     values:
-      - ""
-      - "--p_hardtolearn 0.33"
-      - "--p_ambiguous 0.33"
-      - "--p_easytolearn 0.33"
-      - "--p_confidence 0.33 --selector_confidence top"
-      - "--p_confidence 0.33 --selector_confidence bottom"
-      - "--p_variability 0.33 --selector_variability top"
-      - "--p_variability 0.33 --selector_variability bottom"
-      - "--p_correctness 0.33 --selector_correctness top"
-      - "--p_correctness 0.33 --selector_correctness bottom"
-      - "--p_forgetfulness 0.33 --selector_forgetfulness top"
-      - "--p_forgetfulness 0.33 --selector_forgetfulness bottom"
+      - "--p_random 0.01"
+      - "--p_random 0.05"
+      - "--p_random 0.1"
+      - "--p_random 0.25"
+      - "--p_random 0.33"
+      - "--p_random 0.55"

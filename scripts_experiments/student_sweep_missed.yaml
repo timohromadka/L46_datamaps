@@ -17,7 +17,6 @@ command:
   - --dataset
   - cifar10
   - --distil_experiment
-  - --patience_early_stopping
   - --teacher_model_run
   - run_20231229_095038
   - --prev_run_name_for_dynamics

@@ -13,6 +13,7 @@ from utils.wandb_utils import create_wandb_logger
 import traceback
 import sys
 
+from torch.cuda import OutOfMemoryError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('Run Experiment Pipeline for Datamaps!')
@@ -60,13 +61,28 @@ def main():
         
         process_results(args)
         
+        wandb.finish()
+        
+
+    except OutOfMemoryError as oom_error:
+        # Log the error to wandb
+        wandb.log({"error": str(oom_error)})
+
+        # Mark the run as failed
+        wandb.run.fail()
+        
+        wandb.finish(exit_code=-1)
+        
+
     except Exception as e:
-        # exit gracefully, so wandb logs errors
+        # Handle other exceptions
         print(traceback.print_exc(), file=sys.stderr)
         print(f"An error occurred: {e}\n Terminating run here.")
 
-    finally:
-        wandb.finish()
+        # Optionally mark the run as failed for other critical exceptions
+        wandb.run.fail()
+        wandb.finish(exit_code=-1)
+
         
 if __name__ == '__main__':
     main()

@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description='Training Dynamics Guided Knowledge
 # ======================================
 
 # Dataset
-parser.add_argument('--dataset', type=str, required=True, choices=['cifar10', 'cifar100', 'mnist', 'speechcommands', 'urbansound8k'])
+parser.add_argument('--dataset', type=str, required=False, choices=['cifar10', 'cifar100', 'mnist', 'speechcommands', 'urbansound8k', 'pass_via_subset_argument'])
 # parser.add_argument('--small_dataset', action='store_true', help='(for debugging) True if using a small sample of data from the training set.')
 
 # Model 
@@ -71,12 +71,12 @@ parser.add_argument('--overfit_batches', type=int, default=0, help='PyTorch Ligh
 # Training Dynamics
 parser.add_argument('--track_training_dynamics', action='store_true', help='If True, the current run will track training dynamics at the end of each epoch.')
 parser.add_argument('--training_dynamics_dir', type=str, default='training_dynamics')
-parser.add_argument('--prev_run_name_for_dynamics', type=str, help='The wandb run_name to use to fetch training_dynamics from previous run. Default=None if not training using subset')
+parser.add_argument('--prev_run_name_for_dynamics', type=str, default='',help='The wandb run_name to use to fetch training_dynamics from previous run. Default=None if not training using subset')
 parser.add_argument('--val_split_seed', type=int, required=True, help='Random seed for train-val split. Required for datamapped subset selection. If not provided, will be sourced from teacher in case of student or will be randomly generated in case of teacher.')
 
 # Knowledge Distillation
 parser.add_argument('--distil_experiment', action='store_true', help='If True, the current run will now be knowledge distillation.')
-parser.add_argument('--teacher_model_run', type=str)
+parser.add_argument('--teacher_model_run', type=str, default='')
 parser.add_argument('--distillation_temp', type=float, default=1)
 parser.add_argument('--hard_label_loss', type=str, default='cross_entropy', choices=['cross_entropy']) # add more if needed
 parser.add_argument('--knowledge_distillation_loss', type=str, default='KD', choices=['KD'], help='Type of knowledge distillation loss to use')
@@ -113,12 +113,12 @@ parser.add_argument('--disable_wandb', action='store_true', dest='disable_wandb'
 parser.set_defaults(disable_wandb=False)
 
 def apply_subset_arguments(subset_args_str, args):
-    # Trim the string to remove any leading/trailing whitespace
-    subset_args_str = subset_args_str.strip()
 
     # Proceed only if the string is not empty
-    if subset_args_str:
+    if subset_args_str and subset_args_str is not None:
         # Split the subset argument string into individual arguments
+        # Trim the string to remove any leading/trailing whitespace
+        subset_args_str = subset_args_str.strip()
         subset_args = subset_args_str.split()
         
         # Iterate over the subset arguments and update the args Namespace

@@ -1,0 +1,55 @@
+program: /home/er647/projects/L46_datamaps/run_experiment.py # Path to the program to run
+project: mnist_cifar100_knowledge_distillation_subset_training # Project name
+
+name: mnist_cifar100_knowledge_distillation_random_subset_training
+
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - --notes
+  - "Training students: cifar-100 and mnist datasets, 2 random subset grid search"
+  - --model_size
+  - small
+  - --epochs
+  - 10
+  - --distil_experiment
+  - --dataset 
+  - pass_via_subset_argument
+  - --tags
+  - tag4
+  - ${args}
+
+method: grid
+parameters:
+  model:
+    distribution: categorical
+    values:
+      - resnet
+      - efficientnet
+      - mobilenet
+
+  val_split_seed:
+    distribution: categorical
+    values:
+      - 42
+      - 43
+      - 44
+
+  subset_argument:
+    distribution: categorical
+    values:
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.01"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.05"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.1"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.25"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.33"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930 --p_random 0.55"
+      - "--dataset mnist --teacher_model_run run_20231229_134930 --prev_run_name_for_dynamics run_20231229_134930"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_random 0.01"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_random 0.05"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_random 0.25"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_random 0.33"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919 --p_random 0.55"
+      - "--dataset cifar100 --teacher_model_run run_20231229_123919 --prev_run_name_for_dynamics run_20231229_123919"

@@ -111,7 +111,7 @@ def get_dataloaders(args):
     # only obtain a subset if it is requested !
     if args.prev_run_name_for_dynamics and \
         (args.p_easytolearn or args.p_ambiguous or args.p_hardtolearn or args.p_variability or 
-         args.p_confidence or args.p_correctness or args.p_forgetfulness):
+         args.p_confidence or args.p_correctness or args.p_forgetfulness or args.p_random):
             
         logger.info(f'Fetching subset of data according to given training dynamic percentages.')
         
@@ -135,6 +135,9 @@ def get_dataloaders(args):
             selector_forgetfulness=args.selector_forgetfulness,
             p_random=args.p_random
         )
+
+        while len(selected_indices) % args.train_batch_size < 10 and len(selected_indices) % args.train_batch_size != 0:
+            selected_indices.pop() # this resolves a weird edge case bug where the last batch is too small and it causes errors.
 
         train_dataset = Subset(train_dataset, selected_indices)
 
