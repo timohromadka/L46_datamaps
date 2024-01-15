@@ -1,5 +1,9 @@
 # L46 Datamaps
 
+This is the codebase for the paper Knowledge Distillation with Training Dynamics, Hromadka & Rex.
+
+In this study, we examine the efficacy of Knowledge Distillation in conjunction with Dataset Cartography within Computer Vision. Our aim was to ascertain whether training on subsets of data, selected based on training dynamics, can enhance the performance of student models while being cost-effective. Contrary to expectations set by similar NLP studies, our experiments across various architectures and datasets (CIFAR10, CIFAR100, MNIST) revealed that randomly selected data subsets (approximately 33\% of the total dataset) consistently outperformed those chosen based on specific training dynamics. This unexpected outcome suggests the need for a nuanced understanding of dataset selection in Knowledge Distillation, particularly in the Computer Vision domain. Our findings highlight the complex interplay between data selection and model performance, opening new avenues for research in effective training strategies. We publish our code for future research.
+
 ## Installing the project 
 You must have **conda** installed locally. All project dependencies are included in the conda file: environment.yml.
 
