@@ -89,14 +89,3 @@ git checkout BRANCH
 wandb sweep scripts_experiments/_template_sweep.yaml
 wandb agent XYZ
 ```
-
-# Tmux sessions
-- Tmux is a way to run multiple processes in the same terminal. It's useful for running multiple experiments at the same time. It allows your connection to persist even if you close your terminal.
-```
-tmux # start a new tmux session
-tmux ls # list all tmux sessions
-tmux attach -t 0 # attach to a specific tmux session
-tmux kill-session -t 0 # kill a specific tmux session
-```
-
-Usually you can start multiple runs simultaneously using tmux, to fully use the CPU/GPU. For example, you can run 4 runs in parallel using 4 tmux sessions. E.g., start one new `wandb agent` within each tmux session. You can then kill all tmux sessions using `kill_tmux_session.sh $1` where $1 is the number of tmux sessions you want to kill.
