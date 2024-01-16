@@ -89,3 +89,7 @@ git checkout BRANCH
 wandb sweep scripts_experiments/_template_sweep.yaml
 wandb agent XYZ
 ```
+
+# Reproducing Experiments
+
+WandB sweep yaml files can be found in /scripts_experiments. These correspond to experimental phases of the project, and can be ran with wandb sweep in order to repeat our experiments.
